@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATL Dept 593 — Live Board</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #f5f4f0;
+    color: #1a1a1a;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: linear-gradient(135deg, #003366 0%, #001f3f 100%);
+    border-bottom: 4px solid #c8102e;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .topbar::after {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -5%;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(200,16,46,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: relative;
+    z-index: 1;
+  }
+  .plane-mark {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .topbar-left h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: -.01em;
+  }
+  .topbar-left p {
+    font-size: 12px;
+    color: #a8c0d8;
+    margin-top: 2px;
+    letter-spacing: .02em;
+  }
+  .topbar-right {
+    text-align: right;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .clock {
+    font-size: 30px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .shift-label {
+    font-size: 11px;
+    color: #a8c0d8;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  /* ── ALERT BANNER ── */
+  .alert-banner {
+    display: none;
+    background: #fff1f1;
+    border-bottom: 1px solid #fca5a5;
+    padding: 10px 24px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #b91c1c;
+    gap: 8px;
+    align-items: center;
+  }
+  .alert-banner.visible { display: flex; }
+
+  /* ── NAV TABS ── */
+  .nav {
+    background: #fff;
+    border-bottom: 1px solid #e5e3dd;
+    padding: 0 24px;
+    display: flex;
+    gap: 4px;
+  }
+  .nav-btn {
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .nav-btn:hover { color: #1a1a1a; }
+  .nav-btn.active { color: #1d6fb8; border-bottom-color: #1d6fb8; }
+
+  /* ── LEGEND ── */
+  .legend {
+    background: #fff;
+    border-bottom: 1px solid #e5e3dd;
+    padding: 8px 24px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; }
+  .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-right { margin-left: auto; font-size: 11px; color: #999; display: flex; align-items: center; gap: 5px; }
+
+  /* ── PAGE CONTAINERS ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── SECTION HEADER ── */
+  .section-hdr {
+    padding: 8px 24px 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    background: #e0ddd6;
+    border-bottom: 2px solid #b8b4aa;
+    margin-top: 0;
+  }
+
+  /* ── TABLE ── */
+  .board-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+  }
+  .board-table th {
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    border-bottom: 1px solid #e5e3dd;
+    white-space: nowrap;
+    background: #fff;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+  .board-table td {
+    padding: 11px 12px;
+    font-size: 15px;
+    color: #1a1a1a;
+    border-bottom: 1px solid #f0ede8;
+    white-space: nowrap;
+    vertical-align: middle;
+    font-weight: 500;
+  }
+  .board-table tr:last-child td { border-bottom: none; }
+
+  /* row colors */
+  tr.row-green td { background: #f0fdf4; }
+  tr.row-yellow td { background: #ffe484; }
+  tr.row-red td { background: #fff1f2; }
+  tr.row-done td { background: #fafaf9; color: #aaa; text-decoration: line-through; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge-aos    { background: #b91c1c; color: #ffffff; font-weight: 700; letter-spacing:.03em; }
+  .badge-inb    { background: #f0fdf4; color: #166534; }
+  .badge-sts    { background: #faf5ff; color: #6b21a8; }
+  .badge-ron    { background: #ea580c; color: #ffffff; font-weight: 700; letter-spacing:.03em; }
+  .badge-done   { background: #f3f4f6; color: #9ca3af; }
+  .shift-s1  { color: #1d6fb8; font-weight: 700; font-size: 17px; }
+  .shift-s2  { color: #b45309; font-weight: 700; font-size: 17px; }
+  .shift-s3  { color: #6b21a8; font-weight: 700; font-size: 17px; }
+  .shift-sw  { color: #166534; font-weight: 700; font-size: 17px; }
+
+  /* time countdown */
+  .time-val { font-variant-numeric: tabular-nums; }
+  .countdown { font-size: 13px; color: #888; display: block; margin-top: 1px; }
+  .countdown.urgent { color: #b91c1c; font-weight: 600; }
+  .countdown.warn   { color: #b45309; font-weight: 600; }
+
+  /* ── ACTION BUTTONS ── */
+  .action-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    cursor: pointer;
+    color: #374151;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s;
+  }
+  .action-btn:hover { background: #f9fafb; border-color: #9ca3af; }
+  .action-btn.done-btn { border-color: #86efac; color: #166534; }
+  .action-btn.done-btn:hover { background: #f0fdf4; }
+  .action-btn.undo-btn { border-color: #d1d5db; color: #9ca3af; font-size: 11px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-row td {
+    text-align: center;
+    padding: 28px;
+    color: #bbb;
+    font-size: 13px;
+    font-style: italic;
+    background: #fff !important;
+    text-decoration: none !important;
+  }
+
+  /* ── ADD BUTTON ── */
+  .add-area {
+    padding: 14px 24px;
+    background: #fff;
+    border-top: 1px solid #e5e3dd;
+  }
+  .add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    color: #374151;
+    transition: background .15s;
+  }
+  .add-btn:hover { background: #f9fafb; }
+  .note-text {
+    font-size: 11px;
+    color: #999;
+    padding: 10px 24px 14px;
+    background: #fff;
+    border-top: 1px solid #f0ede8;
+  }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 18px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: 11px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: .04em; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    color: #1a1a1a;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: #1d6fb8; }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn-cancel { padding: 8px 16px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; color: #555; }
+  .btn-cancel:hover { background: #f9fafb; }
+  .btn-submit { padding: 8px 20px; border: none; border-radius: 6px; background: #1d6fb8; cursor: pointer; font-size: 13px; color: #fff; font-weight: 500; }
+  .btn-submit:hover { background: #1a5fa0; }
+
+  /* ── METRICS ── */
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; padding: 20px 24px; }
+  .metric-card { background: #fff; border: 1px solid #e5e3dd; border-radius: 10px; padding: 14px 16px; }
+  .metric-card .m-label { font-size: 11px; color: #888; margin-bottom: 6px; }
+  .metric-card .m-val { font-size: 26px; font-weight: 600; color: #1a1a1a; line-height: 1; }
+  .metric-card .m-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .shift-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 12px; padding: 0 24px 20px; }
+  .shift-card { background: #fff; border: 1px solid #e5e3dd; border-radius: 10px; padding: 14px 16px; }
+  .shift-card-title { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .shift-card-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; border-bottom: 1px solid #f0ede8; color: #666; }
+  .shift-card-row:last-child { border-bottom: none; }
+  .shift-card-row span:last-child { font-weight: 600; color: #1a1a1a; }
+  .metrics-section-hdr { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .05em; padding: 16px 24px 8px; }
+
+  /* spacer between sections */
+  .section-spacer { height: 8px; background: #f5f4f0; border-top: 1px solid #e5e3dd; border-bottom: 1px solid #e5e3dd; }
+
+  tr.row-transit td { background: #e0f2fe; }
+  .transit-badge { display:inline-block;font-size:12px;font-weight:700;color:#0369a1;background:#bae6fd;padding:3px 8px;border-radius:6px;vertical-align:middle; }
+  .action-btn.transit-btn { border-color:#7dd3fc;color:#0369a1; }
+  .action-btn.transit-btn:hover { background:#e0f2fe; }
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="plane-mark">
+      <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="50,8 88,72 50,58" fill="#c8102e"/>
+        <polygon points="50,8 12,72 50,58" fill="#e8334f"/>
+        <polygon points="50,58 88,72 50,92" fill="#8c0c20"/>
+        <polygon points="50,58 12,72 50,92" fill="#c8102e"/>
+      </svg>
+    </div>
+    <div>
+      <h1>ATL Dept 593 &mdash; Live Board</h1>
+      <p>Active shipments across all shifts &middot; 24/7</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="clock" id="clock">--:--</div>
+    <div class="shift-label" id="shift-label">Loading...</div>
+  </div>
+</div>
+
+<!-- ALERT BANNER -->
+<div class="alert-banner" id="alert-banner">
+  &#9888; <span id="alert-text"></span>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('board',this)">Active Board</button>
+  <button class="nav-btn" onclick="showPage('done',this)">Completed Today</button>
+  <button class="nav-btn" onclick="showPage('metrics',this)">Dept Metrics</button>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:#22c55e"></div>2+ hrs &mdash; good</div>
+  <div class="leg"><div class="leg-dot" style="background:#f59e0b"></div>Under 90 min &mdash; get ready</div>
+  <div class="leg"><div class="leg-dot" style="background:#ef4444"></div>Under 45 min &mdash; leave now</div>
+  <div class="leg"><div class="leg-dot" style="background:#d1d5db"></div>Complete</div>
+  <div class="legend-right">&#8635; Auto-updates every minute</div>
+</div>
+
+<!-- ═══ ACTIVE BOARD PAGE ═══ -->
+<div class="page active" id="page-board">
+
+  <!-- OUTBOUND -->
+  <div class="section-hdr">&#9992; Outbound / AOS &mdash; we take it to the plane</div>
+  <table class="board-table">
+    <thead><tr>
+      <th>Date</th><th>Shift</th><th>Reason</th><th>From &#8594; To</th><th>A/C</th>
+      <th>Flight</th><th>ETD</th><th>Gate</th><th>Tail #</th><th>AWB</th>
+      <th>Comments</th><th>Action</th>
+    </tr></thead>
+    <tbody id="out-body"></tbody>
+  </table>
+
+  <div class="section-spacer"></div>
+
+  <div class="section-spacer"></div>
+
+  <!-- INBOUND -->
+  <div class="section-hdr">&#8595; Inbound &mdash; we go pick it up</div>
+  <table class="board-table">
+    <thead><tr>
+      <th>Date</th><th>Shift</th><th>Reason</th><th>From &#8594; To</th><th>A/C</th>
+      <th>Flight</th><th>ETD</th><th>Gate</th><th>Tail #</th><th>AWB</th>
+      <th>Comments</th><th>Action</th>
+    </tr></thead>
+    <tbody id="inb-body"></tbody>
+  </table>
+
+  <div class="section-spacer"></div>
+
+  <!-- OUTSTATION TO OUTSTATION -->
+  <div class="section-hdr">&#8596; Outstation to Outstation &mdash; neither end is ATL</div>
+  <table class="board-table">
+    <thead><tr>
+      <th>Date</th><th>Shift</th><th>Reason</th><th>From &#8594; To</th><th>A/C</th>
+      <th>Flight</th><th>ETD</th><th>Gate</th><th>Tail #</th><th>AWB</th>
+      <th>Comments</th><th>Action</th>
+    </tr></thead>
+    <tbody id="sts-body"></tbody>
+  </table>
+
+  <div class="section-spacer"></div>
+
+  <div class="add-area">
+    <button class="add-btn" onclick="openModal()">+ Add shipment to board</button>
+  </div>
+  <div class="note-text">
+    Click &ldquo;Loaded&rdquo; when the tool is on the plane and the flight is departing, or &ldquo;Received&rdquo; when you&rsquo;re back with the pickup. That clears it from the board.
+  </div>
+</div>
+
+<!-- ═══ COMPLETED TODAY PAGE ═══ -->
+<div class="page" id="page-done">
+  <table class="board-table">
+    <thead><tr>
+      <th>Date</th><th>Shift</th><th>Reason</th><th>From &#8594; To</th><th>A/C</th>
+      <th>Flight</th><th>Time</th><th>AWB</th><th>Comments</th><th>Cleared by</th><th></th>
+    </tr></thead>
+    <tbody id="done-body"></tbody>
+  </table>
+</div>
+
+<!-- ═══ METRICS PAGE ═══ -->
+<div class="page" id="page-metrics">
+  <div class="metrics-section-hdr">Department totals &mdash; June 2026 &mdash; all shifts combined</div>
+  <div class="metrics-grid">
+    <div class="metric-card"><div class="m-label">Total tools moved</div><div class="m-val" id="m-total">172</div><div class="m-sub">June 2026 · all shifts</div></div>
+    <div class="metric-card"><div class="m-label">Total AWBs</div><div class="m-val">43</div><div class="m-sub">Unique shipments</div></div>
+    <div class="metric-card"><div class="m-label">AOS shipments</div><div class="m-val">45</div><div class="m-sub">We took it to the plane</div></div>
+    <div class="metric-card"><div class="m-label">Inbound pickups</div><div class="m-val">28</div><div class="m-sub">We went to get it</div></div>
+    <div class="metric-card"><div class="m-label">STS movements</div><div class="m-val">7</div><div class="m-sub">Station to station</div></div>
+    <div class="metric-card"><div class="m-label">Active days</div><div class="m-val">10</div><div class="m-sub">Days with activity</div></div>
+  </div>
+
+  <div class="section-spacer"></div>
+  <div class="metrics-section-hdr">Breakdown by shift &mdash; June 2026</div>
+  <div class="shift-cards">
+    <div class="shift-card">
+      <div class="shift-card-title"><span class="badge badge-aos">1st Shift</span> Weekday</div>
+      <div class="shift-card-row"><span>Total tools</span><span>73</span></div>
+      <div class="shift-card-row"><span>AOS count</span><span>37</span></div>
+      <div class="shift-card-row"><span>RON count</span><span>12</span></div>
+      <div class="shift-card-row"><span>Active days</span><span>2</span></div>
+      <div class="shift-card-row"><span>Peak day</span><span>June 2 (56)</span></div>
+    </div>
+    <div class="shift-card">
+      <div class="shift-card-title"><span class="badge badge-aos">1st Shift</span> Weekend</div>
+      <div class="shift-card-row"><span>Total tools</span><span>73</span></div>
+      <div class="shift-card-row"><span>AOS count</span><span>37</span></div>
+      <div class="shift-card-row"><span>RON count</span><span>12</span></div>
+      <div class="shift-card-row"><span>Active days</span><span>2</span></div>
+      <div class="shift-card-row"><span>Peak day</span><span>June 2 (56)</span></div>
+    </div>
+    <div class="shift-card">
+      <div class="shift-card-title"><span class="badge badge-sts">2nd Shift</span> Weekday</div>
+      <div class="shift-card-row"><span>Total tools</span><span>26</span></div>
+      <div class="shift-card-row"><span>AOS count</span><span>2</span></div>
+      <div class="shift-card-row"><span>RON count</span><span>8</span></div>
+      <div class="shift-card-row"><span>Active days</span><span>4</span></div>
+      <div class="shift-card-row"><span>Peak day</span><span>June 3 (12)</span></div>
+    </div>
+    <div class="shift-card">
+      <div class="shift-card-title"><span class="badge badge-inb">3rd Shift</span> Weekday</div>
+      <div class="shift-card-row"><span>Total tools</span><span>73</span></div>
+      <div class="shift-card-row"><span>AOS count</span><span>37</span></div>
+      <div class="shift-card-row"><span>RON count</span><span>12</span></div>
+      <div class="shift-card-row"><span>Active days</span><span>2</span></div>
+      <div class="shift-card-row"><span>Peak day</span><span>June 2 (56)</span></div>
+    </div>
+    <div class="shift-card">
+      <div class="shift-card-title"><span class="badge badge-inb">3rd Shift</span> Weekend</div>
+      <div class="shift-card-row"><span>Total tools</span><span>73</span></div>
+      <div class="shift-card-row"><span>AOS count</span><span>37</span></div>
+      <div class="shift-card-row"><span>RON count</span><span>12</span></div>
+      <div class="shift-card-row"><span>Active days</span><span>2</span></div>
+      <div class="shift-card-row"><span>Peak day</span><span>June 2 (56)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD SHIPMENT MODAL ═══ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2>Add shipment to board</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Shift &amp; Date <span id="shift-preview" style="font-weight:700;color:#1d6fb8;text-transform:none;letter-spacing:0;font-size:12px"></span></label>
+        <input type="text" id="f-shift" readonly style="background:#f3f4f6;color:#555;cursor:default" placeholder="Auto-filled from clock">
+      </div>
+      <div class="form-group">
+        <label style="display:flex;justify-content:space-between;align-items:center">
+          Reason
+          <span onclick="openReasons()" style="font-size:10px;color:#1d6fb8;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0">+ edit list</span>
+        </label>
+        <select id="f-type"></select>
+      </div>
+      <div class="form-group">
+        <label>From &#8594; To</label>
+        <input type="text" id="f-route" placeholder="ATL-LAX" style="text-transform:uppercase">
+      </div>
+      <div class="form-group">
+        <label>A/C #</label>
+        <input type="text" id="f-ac" placeholder="3501">
+      </div>
+      <div class="form-group">
+        <label>Flight</label>
+        <input type="text" id="f-flt" placeholder="DL2204">
+      </div>
+      <div class="form-group">
+        <label>ETD</label>
+        <input type="text" id="f-time" placeholder="1545" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label>Gate</label>
+        <input type="text" id="f-gate" placeholder="E10">
+      </div>
+      <div class="form-group">
+        <label>Tail #</label>
+        <input type="text" id="f-tail" placeholder="5651">
+      </div>
+      <div class="form-group full">
+        <label>AWB #</label>
+        <input type="text" id="f-awb" placeholder="07406103">
+      </div>
+      <div class="form-group full">
+        <label>Comments</label>
+        <textarea id="f-comments" placeholder=""></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" onclick="submitShipment()">Add to board</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SERVER CONNECTION ────────────────────────────────────────────────────────
+let jobs = [];
+let reasons = ['AOS','RON','LOAN','LOG','AOS LOAN','STS','ATS','STL','RTS'];
+let ws;
+
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/live`);
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'init' || msg.type === 'jobs') { jobs = msg.jobs; render(); }
+    if (msg.type === 'init' || msg.type === 'reasons') { reasons = msg.reasons; buildTypeDropdown(); }
+  };
+  ws.onclose = () => setTimeout(connectWS, 2000);
+  ws.onerror = () => ws.close();
+}
+
+async function api(method, path, body) {
+  const res = await fetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  return res.json();
+}
+
+function now() { return new Date(); }
+
+function minsTo(timeStr) {
+  if (!timeStr) return 9999;
+  const s = String(timeStr).replace(':','').padStart(4,'0');
+  const h = parseInt(s.slice(0,2)), m = parseInt(s.slice(2,4));
+  const d = new Date(); d.setHours(h,m,0,0);
+  return (d - now()) / 60000;
+}
+
+function fmtTime(t) {
+  if (!t) return '—';
+  return String(t).replace(':','').padStart(4,'0');
+}
+
+function fmtCountdown(mins) {
+  if (mins >= 9999 || mins < 0) return '';
+  if (mins < 60) return Math.round(mins) + 'm';
+  return Math.floor(mins/60) + 'h ' + Math.round(mins%60) + 'm';
+}
+
+function rowClass(job) {
+  if (job.done) return 'row-done';
+  if (job.transit) return 'row-transit';
+  const m = minsTo(job.time);
+  if (m < 0) return 'row-done';
+  if (m <= 45) return 'row-red';
+  if (m <= 90) return 'row-yellow';
+  return 'row-green';
+}
+
+function shiftClass(s) {
+  const v = (s||'').toUpperCase();
+  if (v.includes('WE')) return 'shift-sw';
+  if (v.includes('1ST')) return 'shift-s1';
+  if (v.includes('2ND')) return 'shift-s2';
+  if (v.includes('3RD')) return 'shift-s3';
+  return 'shift-s1';
+}
+
+function typeBadge(t) {
+  const cls = t==='AOS'?'badge-aos':t==='RON'?'badge-ron':t==='INBOUND'?'badge-inb':t==='STS'?'badge-sts':'badge-done';
+  return `<span class="badge ${cls}">${t}</span>`;
+}
+
+function buildRow(job, timeLabel) {
+  const rc   = rowClass(job);
+  const mins = minsTo(job.time);
+  const cd   = !job.done && mins > 0 && mins < 9999
+    ? `<span class="countdown ${mins<=45?'urgent':mins<=90?'warn':''}">${fmtCountdown(mins)}</span>` : '';
+  const doneLabel = timeLabel === 'ETD' ? 'Loaded' : 'Received';
+
+  let actionBtns;
+  if (job.done) {
+    actionBtns = `<button class="action-btn undo-btn" onclick="doUndo(${job.id})">Undo</button>`;
+  } else if (job.transit) {
+    actionBtns = `<span class="transit-badge">&#9992; IN TRANSIT</span>
+      <button class="action-btn done-btn" onclick="doDone(${job.id},'${doneLabel}')" style="margin-left:6px">&check; ${doneLabel}</button>
+      <button class="action-btn undo-btn" onclick="doTransit(${job.id})" style="margin-left:4px;font-size:11px">Cancel</button>`;
+  } else {
+    actionBtns = `<button class="action-btn transit-btn" onclick="doTransit(${job.id})" style="margin-right:5px">&#9992; En Route</button>
+      <button class="action-btn" onclick="openEdit(${job.id})" style="margin-right:5px;font-size:12px">&#9998; Edit</button>
+      <button class="action-btn done-btn" onclick="doDone(${job.id},'${doneLabel}')">&check; ${doneLabel}</button>`;
+  }
+
+  return `<tr class="${rc}" data-id="${job.id}">
+    <td style="font-size:15px;font-weight:600;color:#555">${job.date||''}</td>
+    <td class="${shiftClass(job.shift)}">${job.shift||''}</td>
+    <td>${typeBadge(job.type)}</td>
+    <td>${(job.route||'').replace('-','&rarr;')}</td>
+    <td>${job.ac||'—'}</td>
+    <td>${job.flt||'—'}</td>
+    <td><span class="time-val">${fmtTime(job.time)}</span>${cd}</td>
+    <td>${job.gate||'—'}</td>
+    <td>${job.tail||'—'}</td>
+    <td style="font-size:17px;font-weight:700;color:#1a1a1a">${job.awb||'—'}</td>
+    <td style="font-size:16px;color:#555;font-weight:400;max-width:220px;white-space:normal">${job.comments||''}</td>
+    <td style="white-space:nowrap">${actionBtns}</td>
+  </tr>`;
+}
+
+function emptyRow(msg) {
+  return `<tr class="empty-row"><td colspan="12">${msg}</td></tr>`;
+}
+
+function render() {
+  const active = jobs.filter(j => !j.done);
+  const fromSt = j => (j.route||'').split('-')[0].trim().toUpperCase();
+  const toSt   = j => (j.route||'').split('-').slice(1).join('-').trim().toUpperCase();
+  const out = active.filter(j => fromSt(j)==='ATL').sort((a,b)=>minsTo(a.time)-minsTo(b.time));
+  const inb = active.filter(j => fromSt(j)!=='ATL' && toSt(j)==='ATL').sort((a,b)=>minsTo(a.time)-minsTo(b.time));
+  const sts = active.filter(j => fromSt(j)!=='ATL' && toSt(j)!=='ATL').sort((a,b)=>minsTo(a.time)-minsTo(b.time));
+  const done = jobs.filter(j => j.done);
+
+  document.getElementById('out-body').innerHTML = out.length ? out.map(j=>buildRow(j,'ETD')).join('') : emptyRow('No active outbound shipments');
+  document.getElementById('inb-body').innerHTML = inb.length ? inb.map(j=>buildRow(j,'ETA')).join('') : emptyRow('No active inbound shipments');
+  document.getElementById('sts-body').innerHTML = sts.length ? sts.map(j=>buildRow(j,'ETD')).join('') : emptyRow('No active STS shipments');
+
+  document.getElementById('done-body').innerHTML = done.length
+    ? done.map(j=>`<tr class="row-done">
+        <td style="font-size:15px;font-weight:600;color:#aaa">${j.date||''}</td>
+        <td class="${shiftClass(j.shift)}">${j.shift||''}</td>
+        <td>${typeBadge(j.type)}</td>
+        <td>${(j.route||'').replace('-','&rarr;')}</td>
+        <td>${j.ac||'—'}</td><td>${j.flt||'—'}</td>
+        <td>${j.clearedAt||'—'}</td><td>${j.gate||'—'}</td><td>${j.tail||'—'}</td>
+        <td style="font-size:16px;font-weight:700;color:#aaa">${j.awb||'—'}</td>
+        <td style="font-size:14px;color:#aaa;max-width:180px;white-space:normal">${j.comments||''}</td>
+        <td><button class="action-btn undo-btn" onclick="doUndo(${j.id})">Undo</button></td>
+      </tr>`).join('')
+    : `<tr class="empty-row"><td colspan="12">Nothing cleared yet today</td></tr>`;
+
+  const urgent = active.filter(j=>{ const m=minsTo(j.time); return m>0&&m<=45; });
+  const banner = document.getElementById('alert-banner');
+  if (urgent.length) {
+    banner.classList.add('visible');
+    document.getElementById('alert-text').innerHTML = '<strong>Leave now:</strong> ' +
+      urgent.map(j=>`${j.flt||''} ${(j.route||'').replace('-','→')} in ${Math.round(minsTo(j.time))}min — Gate ${j.gate||'?'}`).join(' &nbsp;·&nbsp; ');
+  } else { banner.classList.remove('visible'); }
+}
+
+function getShiftLabel() {
+  const d=new Date(),h=d.getHours(),min=d.getMinutes(),dow=d.getDay();
+  const isWeekend=dow===0||dow===5||dow===6;
+  const total=h*60+min;
+  if(isWeekend) return total>=390&&total<1110?'Weekend 1st Shift (6:30a–6:30p)':'Weekend 3rd Shift (6:30p–6:30a)';
+  if(total>=390&&total<840) return 'Weekday 1st Shift (6:30a–2:00p)';
+  if(total>=840&&total<1290) return 'Weekday 2nd Shift (2:00p–9:30p)';
+  return 'Weekday 3rd Shift (9:30p–6:30a)';
+}
+
+function tick() {
+  const d=new Date();
+  document.getElementById('clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('shift-label').textContent='Current: '+getShiftLabel();
+  render();
+}
+
+async function doTransit(id) { await api('POST',`/api/jobs/${id}/transit`); }
+async function doDone(id,label) { await api('POST',`/api/jobs/${id}/done`,{label}); }
+async function doUndo(id) { await api('POST',`/api/jobs/${id}/undo`); }
+
+function openModal() {
+  const _n=new Date(),dp=(_n.getMonth()+1)+'/'+_n.getDate();
+  const sl=getShiftLabel();
+  const ss=sl.includes('Weekend')?(sl.includes('1st')?'WE 1st':'WE 3rd'):(sl.includes('1st')?'1st':sl.includes('2nd')?'2nd':'3rd');
+  document.getElementById('f-shift').value=dp+'  ·  '+ss+' Shift';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  ['f-type','f-route','f-ac','f-flt','f-time','f-gate','f-tail','f-awb','f-comments']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+async function submitShipment() {
+  const type=document.getElementById('f-type').value;
+  const route=document.getElementById('f-route').value.toUpperCase();
+  if(!type||!route){alert('Please fill in at least Reason and Route.');return;}
+  const _n=new Date(),autoDate=(_n.getMonth()+1)+'/'+_n.getDate();
+  const sl=getShiftLabel();
+  const autoShift=sl.includes('Weekend')?(sl.includes('1st')?'WE 1st':'WE 3rd'):(sl.includes('1st')?'1st':sl.includes('2nd')?'2nd':'3rd');
+  await api('POST','/api/jobs',{
+    date:autoDate,shift:autoShift,type,route,
+    ac:document.getElementById('f-ac').value,
+    flt:document.getElementById('f-flt').value,
+    time:document.getElementById('f-time').value,
+    gate:document.getElementById('f-gate').value,
+    tail:document.getElementById('f-tail').value,
+    awb:document.getElementById('f-awb').value,
+    comments:document.getElementById('f-comments').value
+  });
+  closeModal();
+}
+
+function openEdit(id) {
+  const j=jobs.find(x=>x.id===id); if(!j)return;
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-route').value=j.route||'';
+  document.getElementById('edit-ac').value=j.ac||'';
+  document.getElementById('edit-flt').value=j.flt||'';
+  document.getElementById('edit-time').value=j.time||'';
+  document.getElementById('edit-gate').value=j.gate||'';
+  document.getElementById('edit-tail').value=j.tail||'';
+  document.getElementById('edit-awb').value=j.awb||'';
+  document.getElementById('edit-comments').value=j.comments||'';
+  document.getElementById('edit-overlay').classList.add('open');
+}
+function closeEdit(){document.getElementById('edit-overlay').classList.remove('open');}
+async function saveEdit(){
+  const id=parseInt(document.getElementById('edit-id').value);
+  await api('PUT',`/api/jobs/${id}`,{
+    route:document.getElementById('edit-route').value.toUpperCase(),
+    ac:document.getElementById('edit-ac').value,
+    flt:document.getElementById('edit-flt').value,
+    time:document.getElementById('edit-time').value,
+    gate:document.getElementById('edit-gate').value,
+    tail:document.getElementById('edit-tail').value,
+    awb:document.getElementById('edit-awb').value,
+    comments:document.getElementById('edit-comments').value,
+  });
+  closeEdit();
+}
+
+function buildTypeDropdown(){
+  const sel=document.getElementById('f-type');if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Select...</option>'+reasons.map(r=>`<option${r===cur?' selected':''}>${r}</option>`).join('');
+}
+function openReasons(){renderReasonsList();document.getElementById('reasons-overlay').classList.add('open');}
+function closeReasons(){document.getElementById('reasons-overlay').classList.remove('open');buildTypeDropdown();}
+function renderReasonsList(){
+  document.getElementById('reasons-list').innerHTML=reasons.map((r,i)=>
+    `<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#f9fafb;border:1px solid #e5e3dd;border-radius:6px">
+      <div style="display:flex;flex-direction:column;gap:1px">
+        <button onclick="moveReason(${i},-1)" ${i===0?'disabled':''} style="font-size:10px;background:none;border:1px solid #d1d5db;border-radius:3px;cursor:pointer;padding:0 4px;color:#555;line-height:1.4;${i===0?'opacity:.3':''}">▲</button>
+        <button onclick="moveReason(${i},1)" ${i===reasons.length-1?'disabled':''} style="font-size:10px;background:none;border:1px solid #d1d5db;border-radius:3px;cursor:pointer;padding:0 4px;color:#555;line-height:1.4;${i===reasons.length-1?'opacity:.3':''}">▼</button>
+      </div>
+      <span style="flex:1;font-size:13px;font-weight:500">${r}</span>
+      ${reasons.length>1?`<button onclick="removeReason(${i})" style="font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;padding:2px 6px">Remove</button>`:''}
+    </div>`).join('');
+}
+function moveReason(i,dir){const j=i+dir;if(j<0||j>=reasons.length)return;[reasons[i],reasons[j]]=[reasons[j],reasons[i]];renderReasonsList();}
+function removeReason(i){reasons.splice(i,1);renderReasonsList();}
+function addReason(){
+  const inp=document.getElementById('new-reason-input');
+  const val=inp.value.trim().toUpperCase();
+  if(!val||reasons.includes(val)){inp.value='';return;}
+  reasons.push(val);inp.value='';renderReasonsList();
+}
+async function saveReasons(){await api('PUT','/api/reasons',{reasons});closeReasons();}
+
+function showPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+connectWS();
+buildTypeDropdown();
+tick();
+setInterval(tick,30000);
+</script>
+
+<!-- MANAGE REASONS MODAL -->
+<div class="modal-overlay" id="reasons-overlay">
+  <div class="modal" style="max-width:400px">
+    <h2>Edit Reason List</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:16px">These are the options in the Reason dropdown. Add new ones or remove ones you don't need.</p>
+    <div id="reasons-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="new-reason-input" placeholder="e.g. EXCHANGE"
+        style="flex:1;font-size:13px;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-family:inherit;outline:none;text-transform:uppercase"
+        onkeydown="if(event.key==='Enter')addReason()">
+      <button class="btn-submit" onclick="addReason()">+ Add</button>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="saveReasons()">Save &amp; Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- EDIT ROW MODAL -->
+<div class="modal-overlay" id="edit-overlay">
+  <div class="modal" style="max-width:560px">
+    <h2>&#9998; Edit Shipment</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:16px">Update any field below. Changes apply to the board immediately.</p>
+    <input type="hidden" id="edit-id">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>From &#8594; To</label>
+        <input type="text" id="edit-route" style="text-transform:uppercase">
+      </div>
+      <div class="form-group">
+        <label>A/C #</label>
+        <input type="text" id="edit-ac">
+      </div>
+      <div class="form-group">
+        <label>Flight</label>
+        <input type="text" id="edit-flt">
+      </div>
+      <div class="form-group">
+        <label>ETD</label>
+        <input type="text" id="edit-time" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label>Gate</label>
+        <input type="text" id="edit-gate">
+      </div>
+      <div class="form-group">
+        <label>Tail #</label>
+        <input type="text" id="edit-tail">
+      </div>
+      <div class="form-group full">
+        <label>AWB #</label>
+        <input type="text" id="edit-awb">
+      </div>
+      <div class="form-group full">
+        <label>Comments</label>
+        <textarea id="edit-comments" style="min-height:60px"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEdit()">Cancel</button>
+      <button class="btn-submit" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
