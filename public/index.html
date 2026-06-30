@@ -17,9 +17,9 @@
 
   /* ── TOP BAR ── */
   .topbar {
-    background: linear-gradient(135deg, #003366 0%, #001f3f 100%);
-    border-bottom: 4px solid #c8102e;
-    padding: 16px 28px;
+    background: linear-gradient(125deg, #002a52 0%, #001830 75%);
+    border-bottom: 5px solid #c8102e;
+    padding: 18px 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -27,14 +27,29 @@
     position: relative;
     overflow: hidden;
   }
+  .tail-stripe {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, transparent 60%, rgba(200,16,46,0.18) 100%);
+    pointer-events: none;
+  }
   .topbar::after {
     content: '';
     position: absolute;
-    top: -40%;
-    right: -5%;
-    width: 260px;
-    height: 260px;
-    background: radial-gradient(circle, rgba(200,16,46,0.25) 0%, transparent 70%);
+    top: -50%;
+    right: 8%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(200,16,46,0.35) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .plane-silhouette {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.9;
     pointer-events: none;
   }
   .topbar-left {
@@ -44,27 +59,22 @@
     position: relative;
     z-index: 1;
   }
-  .plane-mark {
-    width: 42px;
-    height: 42px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
   .topbar-left h1 {
-    font-size: 22px;
+    font-size: 23px;
     font-weight: 700;
     color: #fff;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     letter-spacing: -.01em;
+  }
+  .hdr-accent {
+    color: #ff4d6a;
   }
   .topbar-left p {
     font-size: 12px;
-    color: #a8c0d8;
-    margin-top: 2px;
+    color: #9fc0de;
+    margin-top: 3px;
     letter-spacing: .02em;
   }
   .topbar-right {
@@ -74,16 +84,16 @@
     z-index: 1;
   }
   .clock {
-    font-size: 30px;
+    font-size: 31px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: #fff;
     line-height: 1;
-    text-shadow: 0 1px 3px rgba(0,0,0,.2);
+    text-shadow: 0 1px 3px rgba(0,0,0,.25);
   }
   .shift-label {
     font-size: 11px;
-    color: #a8c0d8;
+    color: #9fc0de;
     margin-top: 4px;
     font-weight: 500;
   }
@@ -145,15 +155,23 @@
 
   /* ── SECTION HEADER ── */
   .section-hdr {
-    padding: 8px 24px 6px;
+    padding: 10px 24px 10px 20px;
     font-size: 15px;
     font-weight: 700;
-    color: #111;
+    color: #fff;
     text-transform: uppercase;
     letter-spacing: .07em;
-    background: #e0ddd6;
-    border-bottom: 2px solid #b8b4aa;
+    background: linear-gradient(90deg, #002a52 0%, #0c3d6e 100%);
+    border-left: 6px solid #c8102e;
     margin-top: 0;
+  }
+  .section-hdr.inbound-hdr {
+    background: linear-gradient(90deg, #002a52 0%, #0c3d6e 100%);
+    border-left-color: #4d9fff;
+  }
+  .section-hdr.sts-hdr {
+    background: linear-gradient(90deg, #002a52 0%, #0c3d6e 100%);
+    border-left-color: #a8a8a8;
   }
 
   /* ── TABLE ── */
@@ -350,17 +368,18 @@
 
 <!-- TOP BAR -->
 <div class="topbar">
+  <div class="tail-stripe"></div>
+  <div class="plane-silhouette">
+    <svg width="180" height="60" viewBox="0 0 400 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- Original wide-body silhouette, not based on any copyrighted artwork -->
+      <path d="M10,68 L150,62 L175,30 L188,30 L178,62 L300,58 L330,48 L342,48 L328,64 L390,64 L390,72 L328,72 L342,88 L330,88 L300,76 L178,72 L188,104 L175,104 L150,72 L10,72 Z"
+            fill="#0a2a4a" opacity="0.55"/>
+      <path d="M150,62 L150,72 L60,84 L52,84 L70,68 Z" fill="#0a2a4a" opacity="0.4"/>
+    </svg>
+  </div>
   <div class="topbar-left">
-    <div class="plane-mark">
-      <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="50,8 88,72 50,58" fill="#c8102e"/>
-        <polygon points="50,8 12,72 50,58" fill="#e8334f"/>
-        <polygon points="50,58 88,72 50,92" fill="#8c0c20"/>
-        <polygon points="50,58 12,72 50,92" fill="#c8102e"/>
-      </svg>
-    </div>
     <div>
-      <h1>ATL Dept 593 &mdash; Live Board</h1>
+      <h1>ATL Dept 593 <span class="hdr-accent">&mdash;</span> Live Board</h1>
       <p>Active shipments across all shifts &middot; 24/7</p>
     </div>
   </div>
@@ -410,7 +429,7 @@
   <div class="section-spacer"></div>
 
   <!-- INBOUND -->
-  <div class="section-hdr">&#8595; Inbound &mdash; we go pick it up</div>
+  <div class="section-hdr inbound-hdr">&#8595; Inbound &mdash; we go pick it up</div>
   <table class="board-table">
     <thead><tr>
       <th>Date</th><th>Shift</th><th>Reason</th><th>From &#8594; To</th><th>A/C</th>
@@ -423,7 +442,7 @@
   <div class="section-spacer"></div>
 
   <!-- OUTSTATION TO OUTSTATION -->
-  <div class="section-hdr">&#8596; Outstation to Outstation &mdash; neither end is ATL</div>
+  <div class="section-hdr sts-hdr">&#8596; Outstation to Outstation &mdash; neither end is ATL</div>
   <table class="board-table">
     <thead><tr>
       <th>Date</th><th>Shift</th><th>Reason</th><th>From &#8594; To</th><th>A/C</th>
@@ -456,61 +475,32 @@
 
 <!-- ═══ METRICS PAGE ═══ -->
 <div class="page" id="page-metrics">
-  <div class="metrics-section-hdr">Department totals &mdash; June 2026 &mdash; all shifts combined</div>
+  <div class="metrics-section-hdr" id="metrics-month-label">Department totals — loading...</div>
   <div class="metrics-grid">
-    <div class="metric-card"><div class="m-label">Total tools moved</div><div class="m-val" id="m-total">172</div><div class="m-sub">June 2026 · all shifts</div></div>
-    <div class="metric-card"><div class="m-label">Total AWBs</div><div class="m-val">43</div><div class="m-sub">Unique shipments</div></div>
-    <div class="metric-card"><div class="m-label">AOS shipments</div><div class="m-val">45</div><div class="m-sub">We took it to the plane</div></div>
-    <div class="metric-card"><div class="m-label">Inbound pickups</div><div class="m-val">28</div><div class="m-sub">We went to get it</div></div>
-    <div class="metric-card"><div class="m-label">STS movements</div><div class="m-val">7</div><div class="m-sub">Station to station</div></div>
-    <div class="metric-card"><div class="m-label">Active days</div><div class="m-val">10</div><div class="m-sub">Days with activity</div></div>
+    <div class="metric-card"><div class="m-label">Total tools moved</div><div class="m-val" id="m-total">0</div><div class="m-sub" id="m-total-sub">this month</div></div>
+    <div class="metric-card"><div class="m-label">Total AWBs</div><div class="m-val" id="m-awb">0</div><div class="m-sub">Unique shipments</div></div>
+    <div class="metric-card"><div class="m-label">AOS shipments</div><div class="m-val" id="m-aos">0</div><div class="m-sub">We took it to the plane</div></div>
+    <div class="metric-card"><div class="m-label">Inbound pickups</div><div class="m-val" id="m-inb">0</div><div class="m-sub">We went to get it</div></div>
+    <div class="metric-card"><div class="m-label">STS movements</div><div class="m-val" id="m-sts">0</div><div class="m-sub">Station to station</div></div>
+    <div class="metric-card"><div class="m-label">Active days</div><div class="m-val" id="m-days">0</div><div class="m-sub">Days with activity</div></div>
   </div>
 
   <div class="section-spacer"></div>
-  <div class="metrics-section-hdr">Breakdown by shift &mdash; June 2026</div>
-  <div class="shift-cards">
-    <div class="shift-card">
-      <div class="shift-card-title"><span class="badge badge-aos">1st Shift</span> Weekday</div>
-      <div class="shift-card-row"><span>Total tools</span><span>73</span></div>
-      <div class="shift-card-row"><span>AOS count</span><span>37</span></div>
-      <div class="shift-card-row"><span>RON count</span><span>12</span></div>
-      <div class="shift-card-row"><span>Active days</span><span>2</span></div>
-      <div class="shift-card-row"><span>Peak day</span><span>June 2 (56)</span></div>
-    </div>
-    <div class="shift-card">
-      <div class="shift-card-title"><span class="badge badge-aos">1st Shift</span> Weekend</div>
-      <div class="shift-card-row"><span>Total tools</span><span>73</span></div>
-      <div class="shift-card-row"><span>AOS count</span><span>37</span></div>
-      <div class="shift-card-row"><span>RON count</span><span>12</span></div>
-      <div class="shift-card-row"><span>Active days</span><span>2</span></div>
-      <div class="shift-card-row"><span>Peak day</span><span>June 2 (56)</span></div>
-    </div>
-    <div class="shift-card">
-      <div class="shift-card-title"><span class="badge badge-sts">2nd Shift</span> Weekday</div>
-      <div class="shift-card-row"><span>Total tools</span><span>26</span></div>
-      <div class="shift-card-row"><span>AOS count</span><span>2</span></div>
-      <div class="shift-card-row"><span>RON count</span><span>8</span></div>
-      <div class="shift-card-row"><span>Active days</span><span>4</span></div>
-      <div class="shift-card-row"><span>Peak day</span><span>June 3 (12)</span></div>
-    </div>
-    <div class="shift-card">
-      <div class="shift-card-title"><span class="badge badge-inb">3rd Shift</span> Weekday</div>
-      <div class="shift-card-row"><span>Total tools</span><span>73</span></div>
-      <div class="shift-card-row"><span>AOS count</span><span>37</span></div>
-      <div class="shift-card-row"><span>RON count</span><span>12</span></div>
-      <div class="shift-card-row"><span>Active days</span><span>2</span></div>
-      <div class="shift-card-row"><span>Peak day</span><span>June 2 (56)</span></div>
-    </div>
-    <div class="shift-card">
-      <div class="shift-card-title"><span class="badge badge-inb">3rd Shift</span> Weekend</div>
-      <div class="shift-card-row"><span>Total tools</span><span>73</span></div>
-      <div class="shift-card-row"><span>AOS count</span><span>37</span></div>
-      <div class="shift-card-row"><span>RON count</span><span>12</span></div>
-      <div class="shift-card-row"><span>Active days</span><span>2</span></div>
-      <div class="shift-card-row"><span>Peak day</span><span>June 2 (56)</span></div>
-    </div>
+  <div class="metrics-section-hdr">Breakdown by shift &mdash; this month</div>
+  <div class="shift-cards" id="shift-cards-container"></div>
+
+  <div class="note-text" style="padding:14px 24px">
+    Metrics are calculated live from completed shipments and automatically reset at the start of each new month — no manual clearing needed.
   </div>
 </div>
+
+<!-- Hidden test-mode trigger — small invisible strip at the very bottom of the page -->
+<div onclick="toggleTestMode()" style="height:14px;width:100%;cursor:default" title=""></div>
+
+<div id="test-mode-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#facc15;color:#713f12;font-size:12px;font-weight:700;text-align:center;padding:8px;z-index:500;letter-spacing:.03em">
+  &#9888; TEST MODE ON — added shipments are marked TEST and will NOT count toward Completed Today or Metrics. Click the bottom strip again to turn off.
+</div>
+
 
 <!-- ═══ ADD SHIPMENT MODAL ═══ -->
 <div class="modal-overlay" id="modal-overlay">
@@ -572,6 +562,7 @@
 // ── SERVER CONNECTION ────────────────────────────────────────────────────────
 let jobs = [];
 let reasons = ['AOS','RON','LOAN','LOG','AOS LOAN','STS','ATS','STL','RTS'];
+let testMode = false;
 let ws;
 
 function connectWS() {
@@ -660,6 +651,8 @@ function buildRow(job, timeLabel) {
       <button class="action-btn done-btn" onclick="doDone(${job.id},'${doneLabel}')">&check; ${doneLabel}</button>`;
   }
 
+  const testTag = job.isTest ? `<span style="display:inline-block;font-size:10px;font-weight:700;color:#fff;background:#facc15;color:#713f12;padding:1px 6px;border-radius:4px;margin-right:6px;vertical-align:middle">TEST</span>` : '';
+
   return `<tr class="${rc}" data-id="${job.id}">
     <td style="font-size:15px;font-weight:600;color:#555">${job.date||''}</td>
     <td class="${shiftClass(job.shift)}">${job.shift||''}</td>
@@ -671,7 +664,7 @@ function buildRow(job, timeLabel) {
     <td>${job.gate||'—'}</td>
     <td>${job.tail||'—'}</td>
     <td style="font-size:17px;font-weight:700;color:#1a1a1a">${job.awb||'—'}</td>
-    <td style="font-size:16px;color:#555;font-weight:400;max-width:220px;white-space:normal">${job.comments||''}</td>
+    <td style="font-size:16px;color:#555;font-weight:400;max-width:220px;white-space:normal">${testTag}${job.comments||''}</td>
     <td style="white-space:nowrap">${actionBtns}</td>
   </tr>`;
 }
@@ -764,7 +757,8 @@ async function submitShipment() {
     gate:document.getElementById('f-gate').value,
     tail:document.getElementById('f-tail').value,
     awb:document.getElementById('f-awb').value,
-    comments:document.getElementById('f-comments').value
+    comments:document.getElementById('f-comments').value,
+    isTest: testMode
   });
   closeModal();
 }
@@ -831,6 +825,43 @@ function showPage(name,btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   btn.classList.add('active');
+  if (name === 'metrics') loadMetrics();
+}
+
+function toggleTestMode() {
+  testMode = !testMode;
+  document.getElementById('test-mode-banner').style.display = testMode ? 'block' : 'none';
+}
+
+async function loadMetrics() {
+  try {
+    const res = await fetch('/api/metrics');
+    const m = await res.json();
+    document.getElementById('metrics-month-label').textContent = 'Department totals — ' + m.monthLabel;
+    document.getElementById('m-total').textContent = m.total;
+    document.getElementById('m-total-sub').textContent = m.monthLabel;
+    document.getElementById('m-awb').textContent = m.awbs;
+    document.getElementById('m-aos').textContent = m.aos;
+    document.getElementById('m-inb').textContent = m.inbound;
+    document.getElementById('m-sts').textContent = m.sts;
+    document.getElementById('m-days').textContent = m.activeDays;
+
+    const container = document.getElementById('shift-cards-container');
+    const shiftLabels = { '1st':'1st Shift — Weekday', '2nd':'2nd Shift — Weekday', '3rd':'3rd Shift — Weekday',
+                           'WE 1st':'Weekend 1st Shift', 'WE 3rd':'Weekend 3rd Shift' };
+    container.innerHTML = Object.entries(m.byShift).map(([key, s]) => `
+      <div class="shift-card">
+        <div class="shift-card-title">${shiftLabels[key] || key}</div>
+        <div class="shift-card-row"><span>Total tools</span><span>${s.total}</span></div>
+        <div class="shift-card-row"><span>AOS count</span><span>${s.aos}</span></div>
+        <div class="shift-card-row"><span>RON count</span><span>${s.ron}</span></div>
+        <div class="shift-card-row"><span>Active days</span><span>${s.activeDays}</span></div>
+        <div class="shift-card-row"><span>Peak day</span><span>${s.peakDay ? s.peakDay + ' (' + s.peakCount + ')' : '—'}</span></div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load metrics', e);
+  }
 }
 
 connectWS();
