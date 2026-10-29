@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // Bump this on every release. Open boards (like the TV) reload themselves when it changes.
-const BUILD_ID = '2026-10-29.3';
+const BUILD_ID = '2026-10-29.4';
 const BOOT_ID = crypto.randomBytes(6).toString('hex');
 
 // Everything about time on this board is Eastern (Atlanta), no matter where the server runs.
@@ -222,6 +222,38 @@ if (BASE_URL) {
 setInterval(() => { if (sweep()) { persist(); broadcastJobs(); } }, 3600 * 1000).unref();
 
 app.get('/ping', (req, res) => res.send('ok'));
+
+// ── CT Hub numbers (/api/dashboard) ───────────────────────────────────────────
+// The Tool Recovery workbook sends a summary of its numbers here; the CT Hub site shows them.
+// Until the first push (and after every deploy wipes /tmp) the page falls back to
+// the snapshot committed in public/dashboard/seed.json.
+const DASH_FILE = path.join(DATA_DIR, 'atl_dashboard.json');
+// The CT Hub site (a separate website) reads and updates these numbers, so allow it.
+app.use('/api/dashboard', (req, res, next) => {
+  res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' });
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+app.get('/api/dashboard', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const d = JSON.parse(fs.readFileSync(DASH_FILE, 'utf8'));
+    if (d && d.ct && d.atl) return res.json(d);
+  } catch (e) {}
+  try { return res.json(JSON.parse(fs.readFileSync(path.join(__dirname, 'public', 'dashboard', 'seed.json'), 'utf8'))); }
+  catch (e) { return res.status(404).json({ error: 'no dashboard data' }); }
+});
+app.post('/api/dashboard', (req, res) => {
+  const b = req.body || {};
+  if (!b.ct || !b.atl || !b.all || typeof b.ct !== 'object' || !Array.isArray(b.ct.reasons) || !Array.isArray(b.atl.reasons)) {
+    return res.status(400).json({ error: 'dashboard data needs ct, atl and all sections' });
+  }
+  const d = { asOf: String(b.asOf || new Date().toISOString()).slice(0, 40), ct: b.ct, atl: b.atl, all: b.all, trend: Array.isArray(b.trend) ? b.trend.slice(-400) : [] };
+  const text = JSON.stringify(d);
+  if (text.length > 300000) return res.status(413).json({ error: 'too large' });
+  saveJSON(DASH_FILE, d);
+  res.json({ ok: true });
+});
 
 // ── REST API ──────────────────────────────────────────────────────────────────
 const timeNorm = t => { const s = String(t == null ? '' : t).replace(':', '').trim(); return s ? s.padStart(4, '0') : ''; };
