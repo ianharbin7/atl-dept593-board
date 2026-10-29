@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // Bump this on every release. Open boards (like the TV) reload themselves when it changes.
-const BUILD_ID = '2026-10-29.2';
+const BUILD_ID = '2026-10-29.3';
 const BOOT_ID = crypto.randomBytes(6).toString('hex');
 
 // Everything about time on this board is Eastern (Atlanta), no matter where the server runs.
@@ -120,7 +120,7 @@ function normalizeJob(raw) {
     gate: s(raw.gate), tail: s(raw.tail), awb: s(raw.awb), comments: s(raw.comments),
     isTest: !!raw.isTest, done: !!raw.done, transit: !!raw.transit,
     clearedBy: s(raw.clearedBy), clearedAt: s(raw.clearedAt), clearedAtISO: s(raw.clearedAtISO),
-    key: s(raw.key), source: s(raw.source)
+    key: s(raw.key), source: s(raw.source), origTime: s(raw.origTime), timeChangedAtISO: s(raw.timeChangedAtISO)
   };
   if (!j.shiftDate) j.shiftDate = legacyShiftDate(j.date);
   if (!j.addedAtISO) j.addedAtISO = legacyAddedAt(j);
@@ -224,6 +224,7 @@ setInterval(() => { if (sweep()) { persist(); broadcastJobs(); } }, 3600 * 1000)
 app.get('/ping', (req, res) => res.send('ok'));
 
 // ── REST API ──────────────────────────────────────────────────────────────────
+const timeNorm = t => { const s = String(t == null ? '' : t).replace(':', '').trim(); return s ? s.padStart(4, '0') : ''; };
 const EDITABLE = ['type', 'route', 'ac', 'flt', 'time', 'gate', 'tail', 'awb', 'comments'];
 const clean = v => (v == null ? '' : String(v).slice(0, 500));
 
@@ -258,7 +259,7 @@ app.post('/api/jobs', (req, res) => {
     tail: clean(b.tail), awb: clean(b.awb), comments: clean(b.comments),
     isTest: !!b.isTest, done: false, transit: false,
     clearedBy: '', clearedAt: '', clearedAtISO: '',
-    key: key, source: clean(b.source)
+    key: key, source: clean(b.source), origTime: '', timeChangedAtISO: ''
   };
   if (!job.type || !job.route) return res.status(400).json({ error: 'type and route are required' });
   if (fromSt(job.route) !== 'ATL' && toSt(job.route) !== 'ATL') return res.status(400).json({ error: 'one end of the route must be ATL' });
@@ -272,7 +273,16 @@ app.put('/api/jobs/:id', (req, res) => {
   const j = jobs.find(x => x.id === Number(req.params.id));
   if (!j) return res.status(404).json({ error: 'not found' });
   const b = req.body || {};
+  const prevTime = timeNorm(j.time);
   EDITABLE.forEach(k => { if (k in b) j[k] = k === 'route' ? clean(b[k]).toUpperCase() : clean(b[k]); });
+  // Changing a flight time that was already set = a delay (or an earlier time). Remember the original
+  // so the board can show "DELAYED +45m"; changing it back to the original clears the tag.
+  const newTime = timeNorm(j.time);
+  if (prevTime && newTime !== prevTime) {
+    if (!j.origTime) j.origTime = prevTime;
+    if (newTime === timeNorm(j.origTime)) { j.origTime = ''; j.timeChangedAtISO = ''; }
+    else j.timeChangedAtISO = new Date().toISOString();
+  }
   const h = history.find(x => x.jobId === j.id);
   if (h) EDITABLE.forEach(k => { if (k in h) h[k] = j[k]; });
   persist();
