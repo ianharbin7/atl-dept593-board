@@ -441,19 +441,6 @@
 
   <div class="section-spacer"></div>
 
-  <!-- OUTSTATION TO OUTSTATION -->
-  <div class="section-hdr sts-hdr">&#8596; Outstation to Outstation &mdash; neither end is ATL</div>
-  <table class="board-table">
-    <thead><tr>
-      <th>Date</th><th>Shift</th><th>Reason</th><th>From &#8594; To</th><th>A/C</th>
-      <th>Flight</th><th>ETD</th><th>Gate</th><th>Tail #</th><th>AWB</th>
-      <th>Comments</th><th>Action</th>
-    </tr></thead>
-    <tbody id="sts-body"></tbody>
-  </table>
-
-  <div class="section-spacer"></div>
-
   <div class="add-area">
     <button class="add-btn" onclick="openModal()">+ Add shipment to board</button>
   </div>
@@ -482,7 +469,6 @@
     <div class="metric-card"><div class="m-label">Outbound</div><div class="m-val" id="m-out">0</div><div class="m-sub">We took it out of ATL</div></div>
     <div class="metric-card"><div class="m-label">AOS shipments</div><div class="m-val" id="m-aos">0</div><div class="m-sub">We took it to the plane</div></div>
     <div class="metric-card"><div class="m-label">Inbound pickups</div><div class="m-val" id="m-inb">0</div><div class="m-sub">We went to get it</div></div>
-    <div class="metric-card"><div class="m-label">STS movements</div><div class="m-val" id="m-sts">0</div><div class="m-sub">Station to station</div></div>
     <div class="metric-card"><div class="m-label">Active days</div><div class="m-val" id="m-days">0</div><div class="m-sub">Days with activity</div></div>
   </div>
 
@@ -784,13 +770,11 @@ function render() {
   const toSt   = j => (j.route||'').split('-').slice(1).join('-').trim().toUpperCase();
   const out = active.filter(j => fromSt(j)==='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
   const inb = active.filter(j => fromSt(j)!=='ATL' && toSt(j)==='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
-  const sts = active.filter(j => fromSt(j)!=='ATL' && toSt(j)!=='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
   const dayStart = opDayStart();
   const done = jobs.filter(j => j.done && j.clearedAtISO && new Date(j.clearedAtISO).getTime() >= dayStart);
 
   document.getElementById('out-body').innerHTML = out.length ? out.map(j=>buildRow(j,'ETD')).join('') : emptyRow('No active outbound shipments');
   document.getElementById('inb-body').innerHTML = inb.length ? inb.map(j=>buildRow(j,'ETA')).join('') : emptyRow('No active inbound shipments');
-  document.getElementById('sts-body').innerHTML = sts.length ? sts.map(j=>buildRow(j,'ETD')).join('') : emptyRow('No active STS shipments');
 
   document.getElementById('done-body').innerHTML = done.length
     ? done.map(j=>`<tr class="row-done">
@@ -846,6 +830,8 @@ async function submitShipment() {
   const type=document.getElementById('f-type').value;
   const route=document.getElementById('f-route').value.toUpperCase();
   if(!type||!route){alert('Please fill in at least Reason and Route.');return;}
+  const rp=route.split('-').map(x=>x.trim());
+  if(rp[0]!=='ATL'&&rp[rp.length-1]!=='ATL'){alert('This board is only for shipments going out of or coming into ATL, so one end of the Route must be ATL (for example ATL-LAX or MSP-ATL).');return;}
   // The server stamps the date and shift from the Eastern clock, so they are always right.
   await api('POST','/api/jobs',{
     type,route,
@@ -942,7 +928,6 @@ async function loadMetrics() {
     document.getElementById('m-out').textContent = m.outbound;
     document.getElementById('m-aos').textContent = m.aos;
     document.getElementById('m-inb').textContent = m.inbound;
-    document.getElementById('m-sts').textContent = m.sts;
     document.getElementById('m-days').textContent = m.activeDays;
 
     const container = document.getElementById('shift-cards-container');
