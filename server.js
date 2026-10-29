@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // Bump this on every release. Open boards (like the TV) reload themselves when it changes.
-const BUILD_ID = '2026-10-28.1';
+const BUILD_ID = '2026-10-29.1';
 const BOOT_ID = crypto.randomBytes(6).toString('hex');
 
 // Everything about time on this board is Eastern (Atlanta), no matter where the server runs.
@@ -119,7 +119,8 @@ function normalizeJob(raw) {
     type: s(raw.type), route: s(raw.route), ac: s(raw.ac), flt: s(raw.flt), time: s(raw.time),
     gate: s(raw.gate), tail: s(raw.tail), awb: s(raw.awb), comments: s(raw.comments),
     isTest: !!raw.isTest, done: !!raw.done, transit: !!raw.transit,
-    clearedBy: s(raw.clearedBy), clearedAt: s(raw.clearedAt), clearedAtISO: s(raw.clearedAtISO)
+    clearedBy: s(raw.clearedBy), clearedAt: s(raw.clearedAt), clearedAtISO: s(raw.clearedAtISO),
+    key: s(raw.key), source: s(raw.source)
   };
   if (!j.shiftDate) j.shiftDate = legacyShiftDate(j.date);
   if (!j.addedAtISO) j.addedAtISO = legacyAddedAt(j);
@@ -228,6 +229,21 @@ const clean = v => (v == null ? '' : String(v).slice(0, 500));
 
 app.post('/api/jobs', (req, res) => {
   const b = req.body || {};
+  // A shipment sent from the turnover sheet may already be on the board (typed there first, or sent twice).
+  // If so, fill in only what the board row is missing and never add a second row.
+  const key = clean(b.key);
+  if (key || b.source) {
+    const route = clean(b.route).toUpperCase();
+    const mine = awbTokens(b.awb);
+    const same = jobs.find(j => (key && j.key === key) ||
+      (!j.done && j.route === route && mine.length && awbTokens(j.awb).some(t => mine.includes(t))));
+    if (same) {
+      if (!same.done) ['ac', 'flt', 'time', 'awb'].forEach(k => { if (!same[k] && clean(b[k])) same[k] = clean(b[k]); });
+      persist();
+      broadcastJobs();
+      return res.json(Object.assign({}, same, { duplicate: true }));
+    }
+  }
   const now = new Date();
   const p = etParts(now);
   const s = shiftFor(p);
@@ -241,7 +257,8 @@ app.post('/api/jobs', (req, res) => {
     ac: clean(b.ac), flt: clean(b.flt), time: clean(b.time), gate: clean(b.gate),
     tail: clean(b.tail), awb: clean(b.awb), comments: clean(b.comments),
     isTest: !!b.isTest, done: false, transit: false,
-    clearedBy: '', clearedAt: '', clearedAtISO: ''
+    clearedBy: '', clearedAt: '', clearedAtISO: '',
+    key: key, source: clean(b.source)
   };
   if (!job.type || !job.route) return res.status(400).json({ error: 'type and route are required' });
   jobs.push(job);
