@@ -416,6 +416,11 @@
   .countdown.urgent { font-size: 19px; font-weight: 800; }
   .countdown.late { display: block; width: max-content; margin-top: 5px; padding: 2px 11px; border-radius: 6px; background: #dc2626; color: #fff; font-size: 17px; font-weight: 800; letter-spacing: .05em; animation: latePulse 1.8s ease-in-out infinite; }
   @keyframes latePulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+  .time-old { text-decoration: line-through; color: #8a93a0; font-size: 16px; font-weight: 500; margin-right: 8px; }
+  .delay-tag { display: block; width: max-content; margin-top: 4px; padding: 2px 10px; border-radius: 6px; font-size: 15px; font-weight: 800; letter-spacing: .04em; }
+  .delay-tag.later { background: #f59e0b; color: #1f1300; }
+  .delay-tag.earlier { background: #16a34a; color: #fff; }
+  .delay-tag.fresh { animation: latePulse 1.4s ease-in-out infinite; }
   .action-btn { font-size: 15px; padding: 8px 14px; }
   .action-btn.flight-btn { display: inline-block; text-decoration: none; border-color: #93c5fd; color: #1d4ed8; margin-right: 5px; }
   .action-btn.flight-btn:hover { background: #eff6ff; }
@@ -790,11 +795,39 @@ function typeBadge(t) {
   return `<span class="badge ${cls}">${esc(t)}</span>`;
 }
 
-// Opens the flight's live status page (shows delays and gates) in a new tab. No account or fees.
+// Opens Delta's own flight status page for this flight (gates, delays, early/late) in a new tab.
+// The date is the day of the flight time on the board, Eastern.
 function flightLink(job) {
   const m = String(job.flt || '').match(/(\d{1,4})\s*$/);
   if (!m) return '';
-  return `<a class="action-btn flight-btn" href="https://www.flightaware.com/live/flight/DAL${parseInt(m[1], 10)}" target="_blank" rel="noopener">&#8599; Flight info</a>`;
+  const p = etParts(new Date(jobTarget(job) || Date.now()));
+  const d = p.y + '-' + String(p.mo).padStart(2,'0') + '-' + String(p.d).padStart(2,'0');
+  return `<a class="action-btn flight-btn" href="https://www.delta.com/flightstatus/1/${parseInt(m[1], 10)}/${d}" target="_blank" rel="noopener">&#8599; Flight info</a>`;
+}
+
+// Minutes the flight time moved from the original time (+ later, - earlier), or 0 if it was never changed.
+function timeShift(job) {
+  if (!job.origTime || !job.time) return 0;
+  const mm = t => { const s = String(t).replace(':','').padStart(4,'0'); return parseInt(s.slice(0,2),10)*60 + parseInt(s.slice(2,4),10); };
+  let d = mm(job.time) - mm(job.origTime);
+  if (d > 720) d -= 1440;
+  if (d < -720) d += 1440;
+  return d;
+}
+function fmtShift(d) {
+  const a = Math.abs(d);
+  return a < 60 ? a + 'm' : Math.floor(a/60) + 'h' + (a%60 ? ' ' + (a%60) + 'm' : '');
+}
+function timeCell(job, cd) {
+  const d = timeShift(job);
+  let old = '', tag = '';
+  if (d !== 0) {
+    const fresh = job.timeChangedAtISO && (Date.now() - new Date(job.timeChangedAtISO).getTime()) < 30*60000;
+    old = `<span class="time-old">${esc(fmtTime(job.origTime))}</span>`;
+    tag = d > 0 ? `<span class="delay-tag later${fresh?' fresh':''}">DELAYED +${fmtShift(d)}</span>`
+                : `<span class="delay-tag earlier${fresh?' fresh':''}">EARLIER &minus;${fmtShift(d)}</span>`;
+  }
+  return `<td>${old}<span class="time-val">${esc(fmtTime(job.time))}</span>${tag}${cd}</td>`;
 }
 
 function buildRow(job, timeLabel) {
@@ -831,7 +864,7 @@ function buildRow(job, timeLabel) {
     <td>${esc(job.route).replace('-','&rarr;')}</td>
     <td>${esc(job.ac)||'—'}</td>
     <td>${esc(job.flt)||'—'}</td>
-    <td><span class="time-val">${esc(fmtTime(job.time))}</span>${cd}</td>
+    ${timeCell(job, cd)}
     <td>${esc(job.gate)||'—'}</td>
     <td>${esc(job.tail)||'—'}</td>
     <td style="font-size:17px;font-weight:700;color:#1a1a1a">${esc(job.awb)||'—'}</td>
@@ -847,8 +880,9 @@ function emptyRow(msg) {
 function renderSummary(active) {
   const el = document.getElementById('summary-strip');
   if (!el) return;
-  let late = 0, soon = 0, next = null, nm = Infinity;
+  let late = 0, soon = 0, chg = 0, next = null, nm = Infinity;
   active.filter(j => !j.transit).forEach(j => {
+    if (timeShift(j) !== 0) chg++;
     const m = minsTo(j);
     if (m >= 9999) return;
     if (m <= 0) late++;
@@ -858,6 +892,7 @@ function renderSummary(active) {
   el.innerHTML = chip(active.length, 'Open now', '') +
     chip(late, 'Late', late ? 'bad' : '') +
     chip(soon, 'Leave within 45 min', soon ? 'warn' : '') +
+    (chg ? chip(chg, 'Time changed', 'warn') : '') +
     '<div class="sum-next"><span class="sum-l">Next up</span>' +
     (next ? `<span class="sum-nv">${esc(next.flt) || '—'} &middot; ${esc((next.route || '').replace('-', ' → '))} &middot; ${esc(fmtTime(next.time))} &middot; in ${fmtCountdown(nm)}</span>`
           : '<span class="sum-nv dim">Nothing scheduled</span>') + '</div>';
