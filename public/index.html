@@ -479,6 +479,7 @@
   <div class="metrics-grid">
     <div class="metric-card"><div class="m-label">Total tools moved</div><div class="m-val" id="m-total">0</div><div class="m-sub" id="m-total-sub">this month</div></div>
     <div class="metric-card"><div class="m-label">Total AWBs</div><div class="m-val" id="m-awb">0</div><div class="m-sub">Unique shipments</div></div>
+    <div class="metric-card"><div class="m-label">Outbound</div><div class="m-val" id="m-out">0</div><div class="m-sub">We took it out of ATL</div></div>
     <div class="metric-card"><div class="m-label">AOS shipments</div><div class="m-val" id="m-aos">0</div><div class="m-sub">We took it to the plane</div></div>
     <div class="metric-card"><div class="m-label">Inbound pickups</div><div class="m-val" id="m-inb">0</div><div class="m-sub">We went to get it</div></div>
     <div class="metric-card"><div class="m-label">STS movements</div><div class="m-val" id="m-sts">0</div><div class="m-sub">Station to station</div></div>
@@ -561,17 +562,56 @@
 <script>
 // ── SERVER CONNECTION ────────────────────────────────────────────────────────
 let jobs = [];
+let history = [];
 let reasons = ['AOS','RON','LOAN','LOG','AOS LOAN','STS','ATS','STL','RTS'];
 let testMode = false;
 let ws;
+let seenBuild = null;
+
+// Escapes anything typed into the board before it is shown, so odd characters can't break the page.
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ── BACKUP COPY KEPT IN THIS BROWSER ─────────────────────────────────────────
+// The free server forgets everything when it restarts. Every open board keeps a recent copy and,
+// if the server comes back empty, hands it back so nothing is lost.
+function saveCache() {
+  if (!jobs.length && !history.length) return;
+  try { localStorage.setItem('atl593cache', JSON.stringify({ jobs, history, reasons, t: Date.now() })); } catch (e) {}
+}
+function maybeRestore(msg) {
+  if (!msg.fresh) return;
+  let c = null, done = '';
+  try { c = JSON.parse(localStorage.getItem('atl593cache') || 'null'); done = localStorage.getItem('atl593restored') || ''; } catch (e) {}
+  if (!c || (Date.now() - c.t) > 30 * 60 * 1000) return;      // only a copy from the last 30 minutes
+  if (!(c.jobs && c.jobs.length) && !(c.history && c.history.length)) return;
+  if (done === msg.bootId) return;                            // already handed back to this server
+  try { localStorage.setItem('atl593restored', msg.bootId); } catch (e) {}
+  api('POST', '/api/restore', { jobs: c.jobs || [], history: c.history || [], reasons: c.reasons || null }).catch(() => {});
+}
 
 function connectWS() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   ws = new WebSocket(`${proto}://${location.host}/live`);
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
-    if (msg.type === 'init' || msg.type === 'jobs') { jobs = msg.jobs; render(); }
-    if (msg.type === 'init' || msg.type === 'reasons') { reasons = msg.reasons; buildTypeDropdown(); }
+    if (msg.type === 'init') {
+      // A new version of the board was released: reload so the TV picks it up by itself.
+      if (msg.build) {
+        if (seenBuild && seenBuild !== msg.build) { location.reload(); return; }
+        seenBuild = msg.build;
+      }
+      jobs = msg.jobs; reasons = msg.reasons; history = msg.history || [];
+      maybeRestore(msg);
+      render(); buildTypeDropdown(); saveCache();
+    } else if (msg.type === 'jobs') {
+      jobs = msg.jobs; render(); saveCache();
+    } else if (msg.type === 'history') {
+      history = msg.history; saveCache();
+    } else if (msg.type === 'reasons') {
+      reasons = msg.reasons; buildTypeDropdown(); saveCache();
+    }
   };
   ws.onclose = () => setTimeout(connectWS, 2000);
   ws.onerror = () => ws.close();
@@ -588,12 +628,63 @@ async function api(method, path, body) {
 
 function now() { return new Date(); }
 
-function minsTo(timeStr) {
-  if (!timeStr) return 9999;
-  const s = String(timeStr).replace(':','').padStart(4,'0');
+// ── EASTERN TIME (Atlanta) — every clock, shift and flight time on this board uses it ──
+const TZ = 'America/New_York';
+const etFmt = new Intl.DateTimeFormat('en-US', {
+  timeZone: TZ, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', weekday: 'short'
+});
+const DOW = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+function etParts(d) {
+  const p = {};
+  etFmt.formatToParts(d).forEach(x => { p[x.type] = x.value; });
+  return { y:+p.year, mo:+p.month, d:+p.day, h:(+p.hour)%24, mi:+p.minute, dow:DOW[p.weekday] };
+}
+function etWallToEpoch(y, mo, d, h, mi) {
+  const want = Date.UTC(y, mo-1, d, h, mi);
+  let guess = want;
+  for (let i = 0; i < 3; i++) {
+    const p = etParts(new Date(guess));
+    guess += want - Date.UTC(p.y, p.mo-1, p.d, p.h, p.mi);
+  }
+  return guess;
+}
+
+// Shift windows: 1st Mon-Thu 6:00a-2:00p · 2nd Mon-Thu 2:00p-10:00p · 3rd Mon-Thu 10:00p-6:00a
+// Weekend 1st Fri-Sun 6:30a-6:30p · Weekend 3rd Fri-Sun 6:30p-6:30a. Monday 6:00a belongs to Monday's 1st shift.
+function shiftKeyNow() {
+  const p = etParts(new Date()), m = p.h*60 + p.mi, dow = p.dow;
+  if (dow === 1) return m < 360 ? 'WE 3rd' : m < 840 ? '1st' : m < 1320 ? '2nd' : '3rd';
+  if (dow >= 2 && dow <= 4) return m < 360 ? '3rd' : m < 840 ? '1st' : m < 1320 ? '2nd' : '3rd';
+  if (dow === 5) return m < 360 ? '3rd' : m < 1110 ? 'WE 1st' : 'WE 3rd';
+  return m < 390 ? 'WE 3rd' : m < 1110 ? 'WE 1st' : 'WE 3rd';
+}
+const SHIFT_LABELS = {
+  '1st':'Weekday 1st Shift (6:00a–2:00p)', '2nd':'Weekday 2nd Shift (2:00p–10:00p)', '3rd':'Weekday 3rd Shift (10:00p–6:00a)',
+  'WE 1st':'Weekend 1st Shift (6:30a–6:30p)', 'WE 3rd':'Weekend 3rd Shift (6:30p–6:30a)'
+};
+
+// The moment a flight time refers to. It is the first time that clock reading occurs at or after the
+// moment the shipment was added (minus 3 hours, for late entries), so a 0725 flight entered at 11 PM
+// is correctly "tomorrow morning", and a 2317 flight from last night is correctly overdue.
+function jobTarget(job) {
+  const s = String(job.time == null ? '' : job.time).replace(':','').padStart(4,'0');
+  if (!job.time || !/^\d{4}$/.test(s)) return null;
   const h = parseInt(s.slice(0,2)), m = parseInt(s.slice(2,4));
-  const d = new Date(); d.setHours(h,m,0,0);
-  return (d - now()) / 60000;
+  if (h > 23 || m > 59) return null;
+  const base = (job.addedAtISO ? new Date(job.addedAtISO).getTime() : Date.now()) - 3*3600000;
+  const p = etParts(new Date(base));
+  let t = etWallToEpoch(p.y, p.mo, p.d, h, m);
+  if (t < base) {
+    const nd = new Date(Date.UTC(p.y, p.mo-1, p.d) + 86400000);
+    t = etWallToEpoch(nd.getUTCFullYear(), nd.getUTCMonth()+1, nd.getUTCDate(), h, m);
+  }
+  return t;
+}
+
+function minsTo(job) {
+  const t = jobTarget(job);
+  return t === null ? 9999 : (t - Date.now()) / 60000;
 }
 
 function fmtTime(t) {
@@ -602,19 +693,29 @@ function fmtTime(t) {
 }
 
 function fmtCountdown(mins) {
-  if (mins >= 9999 || mins < 0) return '';
-  if (mins < 60) return Math.round(mins) + 'm';
-  return Math.floor(mins/60) + 'h ' + Math.round(mins%60) + 'm';
+  if (mins >= 9999) return '';
+  const total = Math.round(Math.max(0, mins));
+  if (total < 60) return total + 'm';
+  if (total < 1440) return Math.floor(total/60) + 'h ' + (total%60) + 'm';
+  return Math.floor(total/1440) + 'd ' + Math.floor((total%1440)/60) + 'h';
 }
 
 function rowClass(job) {
   if (job.done) return 'row-done';
   if (job.transit) return 'row-transit';
-  const m = minsTo(job.time);
-  if (m < 0) return 'row-done';
+  const m = minsTo(job);
+  if (m < 0) return 'row-red';      // past its time and still not cleared: needs attention, not "done"
   if (m <= 45) return 'row-red';
   if (m <= 90) return 'row-yellow';
   return 'row-green';
+}
+
+// "Completed Today" = cleared since 6:00 AM Eastern, the start of the operating day.
+function opDayStart() {
+  const p = etParts(new Date());
+  let y = p.y, mo = p.mo, d = p.d;
+  if (p.h < 6) { const pd = new Date(Date.UTC(y, mo-1, d) - 86400000); y = pd.getUTCFullYear(); mo = pd.getUTCMonth()+1; d = pd.getUTCDate(); }
+  return etWallToEpoch(y, mo, d, 6, 0);
 }
 
 function shiftClass(s) {
@@ -628,14 +729,18 @@ function shiftClass(s) {
 
 function typeBadge(t) {
   const cls = t==='AOS'?'badge-aos':t==='RON'?'badge-ron':t==='INBOUND'?'badge-inb':t==='STS'?'badge-sts':'badge-done';
-  return `<span class="badge ${cls}">${t}</span>`;
+  return `<span class="badge ${cls}">${esc(t)}</span>`;
 }
 
 function buildRow(job, timeLabel) {
   const rc   = rowClass(job);
-  const mins = minsTo(job.time);
-  const cd   = !job.done && mins > 0 && mins < 9999
-    ? `<span class="countdown ${mins<=45?'urgent':mins<=90?'warn':''}">${fmtCountdown(mins)}</span>` : '';
+  const mins = minsTo(job);
+  let cd = '';
+  if (!job.done && mins > 0 && mins < 9999) {
+    cd = `<span class="countdown ${mins<=45?'urgent':mins<=90?'warn':''}">${fmtCountdown(mins)}</span>`;
+  } else if (!job.done && !job.transit && mins <= 0) {
+    cd = `<span class="countdown urgent">late ${fmtCountdown(-mins)}</span>`;
+  }
   const doneLabel = timeLabel === 'ETD' ? 'Loaded' : 'Received';
 
   let actionBtns;
@@ -654,17 +759,17 @@ function buildRow(job, timeLabel) {
   const testTag = job.isTest ? `<span style="display:inline-block;font-size:10px;font-weight:700;color:#fff;background:#facc15;color:#713f12;padding:1px 6px;border-radius:4px;margin-right:6px;vertical-align:middle">TEST</span>` : '';
 
   return `<tr class="${rc}" data-id="${job.id}">
-    <td style="font-size:15px;font-weight:600;color:#555">${job.date||''}</td>
-    <td class="${shiftClass(job.shift)}">${job.shift||''}</td>
+    <td style="font-size:15px;font-weight:600;color:#555">${esc(job.date)}</td>
+    <td class="${shiftClass(job.shift)}">${esc(job.shift)}</td>
     <td>${typeBadge(job.type)}</td>
-    <td>${(job.route||'').replace('-','&rarr;')}</td>
-    <td>${job.ac||'—'}</td>
-    <td>${job.flt||'—'}</td>
-    <td><span class="time-val">${fmtTime(job.time)}</span>${cd}</td>
-    <td>${job.gate||'—'}</td>
-    <td>${job.tail||'—'}</td>
-    <td style="font-size:17px;font-weight:700;color:#1a1a1a">${job.awb||'—'}</td>
-    <td style="font-size:16px;color:#555;font-weight:400;max-width:220px;white-space:normal">${testTag}${job.comments||''}</td>
+    <td>${esc(job.route).replace('-','&rarr;')}</td>
+    <td>${esc(job.ac)||'—'}</td>
+    <td>${esc(job.flt)||'—'}</td>
+    <td><span class="time-val">${esc(fmtTime(job.time))}</span>${cd}</td>
+    <td>${esc(job.gate)||'—'}</td>
+    <td>${esc(job.tail)||'—'}</td>
+    <td style="font-size:17px;font-weight:700;color:#1a1a1a">${esc(job.awb)||'—'}</td>
+    <td style="font-size:16px;color:#555;font-weight:400;max-width:220px;white-space:normal">${testTag}${esc(job.comments)}</td>
     <td style="white-space:nowrap">${actionBtns}</td>
   </tr>`;
 }
@@ -677,10 +782,11 @@ function render() {
   const active = jobs.filter(j => !j.done);
   const fromSt = j => (j.route||'').split('-')[0].trim().toUpperCase();
   const toSt   = j => (j.route||'').split('-').slice(1).join('-').trim().toUpperCase();
-  const out = active.filter(j => fromSt(j)==='ATL').sort((a,b)=>minsTo(a.time)-minsTo(b.time));
-  const inb = active.filter(j => fromSt(j)!=='ATL' && toSt(j)==='ATL').sort((a,b)=>minsTo(a.time)-minsTo(b.time));
-  const sts = active.filter(j => fromSt(j)!=='ATL' && toSt(j)!=='ATL').sort((a,b)=>minsTo(a.time)-minsTo(b.time));
-  const done = jobs.filter(j => j.done);
+  const out = active.filter(j => fromSt(j)==='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
+  const inb = active.filter(j => fromSt(j)!=='ATL' && toSt(j)==='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
+  const sts = active.filter(j => fromSt(j)!=='ATL' && toSt(j)!=='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
+  const dayStart = opDayStart();
+  const done = jobs.filter(j => j.done && j.clearedAtISO && new Date(j.clearedAtISO).getTime() >= dayStart);
 
   document.getElementById('out-body').innerHTML = out.length ? out.map(j=>buildRow(j,'ETD')).join('') : emptyRow('No active outbound shipments');
   document.getElementById('inb-body').innerHTML = inb.length ? inb.map(j=>buildRow(j,'ETA')).join('') : emptyRow('No active inbound shipments');
@@ -688,42 +794,37 @@ function render() {
 
   document.getElementById('done-body').innerHTML = done.length
     ? done.map(j=>`<tr class="row-done">
-        <td style="font-size:15px;font-weight:600;color:#aaa">${j.date||''}</td>
-        <td class="${shiftClass(j.shift)}">${j.shift||''}</td>
+        <td style="font-size:15px;font-weight:600;color:#aaa">${esc(j.date)}</td>
+        <td class="${shiftClass(j.shift)}">${esc(j.shift)}</td>
         <td>${typeBadge(j.type)}</td>
-        <td>${(j.route||'').replace('-','&rarr;')}</td>
-        <td>${j.ac||'—'}</td><td>${j.flt||'—'}</td>
-        <td>${j.clearedAt||'—'}</td><td>${j.gate||'—'}</td><td>${j.tail||'—'}</td>
-        <td style="font-size:16px;font-weight:700;color:#aaa">${j.awb||'—'}</td>
-        <td style="font-size:14px;color:#aaa;max-width:180px;white-space:normal">${j.comments||''}</td>
+        <td>${esc(j.route).replace('-','&rarr;')}</td>
+        <td>${esc(j.ac)||'—'}</td><td>${esc(j.flt)||'—'}</td>
+        <td>${esc(j.clearedAt)||'—'}</td><td>${esc(j.gate)||'—'}</td><td>${esc(j.tail)||'—'}</td>
+        <td style="font-size:16px;font-weight:700;color:#aaa">${esc(j.awb)||'—'}</td>
+        <td style="font-size:14px;color:#aaa;max-width:180px;white-space:normal">${esc(j.comments)}</td>
         <td><button class="action-btn undo-btn" onclick="doUndo(${j.id})">Undo</button></td>
       </tr>`).join('')
     : `<tr class="empty-row"><td colspan="12">Nothing cleared yet today</td></tr>`;
 
-  const urgent = active.filter(j=>{ const m=minsTo(j.time); return m>0&&m<=45; });
+  const urgent = active.filter(j=>{ const m=minsTo(j); return m>0&&m<=45; });
   const banner = document.getElementById('alert-banner');
   if (urgent.length) {
     banner.classList.add('visible');
     document.getElementById('alert-text').innerHTML = '<strong>Leave now:</strong> ' +
-      urgent.map(j=>`${j.flt||''} ${(j.route||'').replace('-','→')} in ${Math.round(minsTo(j.time))}min — Gate ${j.gate||'?'}`).join(' &nbsp;·&nbsp; ');
+      urgent.map(j=>`${esc(j.flt)} ${esc((j.route||'').replace('-','→'))} in ${Math.round(minsTo(j))}min — Gate ${esc(j.gate)||'?'}`).join(' &nbsp;·&nbsp; ');
   } else { banner.classList.remove('visible'); }
 }
 
 function getShiftLabel() {
-  const d=new Date(),h=d.getHours(),min=d.getMinutes(),dow=d.getDay();
-  const isWeekend=dow===0||dow===5||dow===6;
-  const total=h*60+min;
-  if(isWeekend) return total>=390&&total<1110?'Weekend 1st Shift (6:30a–6:30p)':'Weekend 3rd Shift (6:30p–6:30a)';
-  if(total>=390&&total<840) return 'Weekday 1st Shift (6:30a–2:00p)';
-  if(total>=840&&total<1290) return 'Weekday 2nd Shift (2:00p–9:30p)';
-  return 'Weekday 3rd Shift (9:30p–6:30a)';
+  return SHIFT_LABELS[shiftKeyNow()];
 }
 
 function tick() {
-  const d=new Date();
-  document.getElementById('clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  const p=etParts(new Date());
+  document.getElementById('clock').textContent=String(p.h).padStart(2,'0')+':'+String(p.mi).padStart(2,'0');
   document.getElementById('shift-label').textContent='Current: '+getShiftLabel();
   render();
+  saveCache();
 }
 
 async function doTransit(id) { await api('POST',`/api/jobs/${id}/transit`); }
@@ -731,9 +832,8 @@ async function doDone(id,label) { await api('POST',`/api/jobs/${id}/done`,{label
 async function doUndo(id) { await api('POST',`/api/jobs/${id}/undo`); }
 
 function openModal() {
-  const _n=new Date(),dp=(_n.getMonth()+1)+'/'+_n.getDate();
-  const sl=getShiftLabel();
-  const ss=sl.includes('Weekend')?(sl.includes('1st')?'WE 1st':'WE 3rd'):(sl.includes('1st')?'1st':sl.includes('2nd')?'2nd':'3rd');
+  const _p=etParts(new Date()),dp=_p.mo+'/'+_p.d;
+  const ss=shiftKeyNow();
   document.getElementById('f-shift').value=dp+'  ·  '+ss+' Shift';
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -746,11 +846,9 @@ async function submitShipment() {
   const type=document.getElementById('f-type').value;
   const route=document.getElementById('f-route').value.toUpperCase();
   if(!type||!route){alert('Please fill in at least Reason and Route.');return;}
-  const _n=new Date(),autoDate=(_n.getMonth()+1)+'/'+_n.getDate();
-  const sl=getShiftLabel();
-  const autoShift=sl.includes('Weekend')?(sl.includes('1st')?'WE 1st':'WE 3rd'):(sl.includes('1st')?'1st':sl.includes('2nd')?'2nd':'3rd');
+  // The server stamps the date and shift from the Eastern clock, so they are always right.
   await api('POST','/api/jobs',{
-    date:autoDate,shift:autoShift,type,route,
+    type,route,
     ac:document.getElementById('f-ac').value,
     flt:document.getElementById('f-flt').value,
     time:document.getElementById('f-time').value,
@@ -795,7 +893,7 @@ async function saveEdit(){
 function buildTypeDropdown(){
   const sel=document.getElementById('f-type');if(!sel)return;
   const cur=sel.value;
-  sel.innerHTML='<option value="">Select...</option>'+reasons.map(r=>`<option${r===cur?' selected':''}>${r}</option>`).join('');
+  sel.innerHTML='<option value="">Select...</option>'+reasons.map(r=>`<option${r===cur?' selected':''}>${esc(r)}</option>`).join('');
 }
 function openReasons(){renderReasonsList();document.getElementById('reasons-overlay').classList.add('open');}
 function closeReasons(){document.getElementById('reasons-overlay').classList.remove('open');buildTypeDropdown();}
@@ -806,7 +904,7 @@ function renderReasonsList(){
         <button onclick="moveReason(${i},-1)" ${i===0?'disabled':''} style="font-size:10px;background:none;border:1px solid #d1d5db;border-radius:3px;cursor:pointer;padding:0 4px;color:#555;line-height:1.4;${i===0?'opacity:.3':''}">▲</button>
         <button onclick="moveReason(${i},1)" ${i===reasons.length-1?'disabled':''} style="font-size:10px;background:none;border:1px solid #d1d5db;border-radius:3px;cursor:pointer;padding:0 4px;color:#555;line-height:1.4;${i===reasons.length-1?'opacity:.3':''}">▼</button>
       </div>
-      <span style="flex:1;font-size:13px;font-weight:500">${r}</span>
+      <span style="flex:1;font-size:13px;font-weight:500">${esc(r)}</span>
       ${reasons.length>1?`<button onclick="removeReason(${i})" style="font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;padding:2px 6px">Remove</button>`:''}
     </div>`).join('');
 }
@@ -841,6 +939,7 @@ async function loadMetrics() {
     document.getElementById('m-total').textContent = m.total;
     document.getElementById('m-total-sub').textContent = m.monthLabel;
     document.getElementById('m-awb').textContent = m.awbs;
+    document.getElementById('m-out').textContent = m.outbound;
     document.getElementById('m-aos').textContent = m.aos;
     document.getElementById('m-inb').textContent = m.inbound;
     document.getElementById('m-sts').textContent = m.sts;
