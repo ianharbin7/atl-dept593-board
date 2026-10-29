@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // Bump this on every release. Open boards (like the TV) reload themselves when it changes.
-const BUILD_ID = '2026-10-29.1';
+const BUILD_ID = '2026-10-29.2';
 const BOOT_ID = crypto.randomBytes(6).toString('hex');
 
 // Everything about time on this board is Eastern (Atlanta), no matter where the server runs.
@@ -261,6 +261,7 @@ app.post('/api/jobs', (req, res) => {
     key: key, source: clean(b.source)
   };
   if (!job.type || !job.route) return res.status(400).json({ error: 'type and route are required' });
+  if (fromSt(job.route) !== 'ATL' && toSt(job.route) !== 'ATL') return res.status(400).json({ error: 'one end of the route must be ATL' });
   jobs.push(job);
   persist();
   broadcastJobs();
@@ -386,7 +387,9 @@ function awbTokens(v) {
   return String(v || '').split(/[\s,\/;]+/).filter(t => (t.match(/\d/g) || []).length >= 6);
 }
 
-function computeMetrics(rows) {
+function computeMetrics(allRows) {
+  // Station-to-station moves are not tracked on this board.
+  const rows = allRows.filter(h => fromSt(h.route) === 'ATL' || toSt(h.route) === 'ATL');
   const total    = rows.length;
   const awbs     = new Set(rows.flatMap(h => awbTokens(h.awb))).size;
   const aos      = rows.filter(h => h.type === 'AOS').length;
