@@ -528,6 +528,8 @@
   .cancel-btn { color: #b91c1c !important; border-color: #fca5a5 !important; background: #fff !important; font-size: 12px !important; }
   .cancel-btn:hover { background: #fee2e2 !important; }
   .stood-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 4px; background: #fee2e2; color: #b91c1c; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+  .tv-clear { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; margin-top: 8vh; color: #6f94b8; font-size: 2.4vw; font-weight: 700; }
+  .tv-clear svg { width: 9vw; height: 7vw; fill: #2a4a6d; transform: rotate(-14deg); }
 </style>
 </head>
 <body>
@@ -1004,11 +1006,11 @@ function renderSummary(active) {
 
 function render() {
   const active = jobs.filter(j => !j.done);
-  renderSummary(active);
   const fromSt = j => (j.route||'').split('-')[0].trim().toUpperCase();
   const toSt   = j => (j.route||'').split('-').slice(1).join('-').trim().toUpperCase();
   const out = active.filter(j => fromSt(j)==='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
   const inb = active.filter(j => fromSt(j)!=='ATL' && toSt(j)==='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
+  renderSummary(out.concat(inb));   // only count what is actually on the board
   const dayStart = opDayStart();
   const done = jobs.filter(j => j.done && j.clearedAtISO && new Date(j.clearedAtISO).getTime() >= dayStart);
 
@@ -1236,13 +1238,15 @@ function renderTV() {
   const out = active.filter(j => fromSt(j) === 'ATL').sort(by);
   const inb = active.filter(j => fromSt(j) !== 'ATL' && toSt(j) === 'ATL').sort(by);
 
+  const BARE = /[?&]bare/.test(location.search);
+  const vis = out.concat(inb);
   let late = 0, soon = 0, next = null, nm = Infinity;
-  active.filter(j => !j.transit).forEach(j => {
+  vis.filter(j => !j.transit).forEach(j => {
     const m = minsTo(j); if (m >= 9999) return;
     if (m <= 0) late++; else { if (m <= 45) soon++; if (m < nm) { nm = m; next = j; } }
   });
   const stat = (n, l, c) => `<div class="tv-stat ${c}"><b>${n}</b><span>${l}</span></div>`;
-  const top = `<div class="tv-top">${stat(active.length, 'Open now', '')}${stat(late, 'Late', late ? 'bad' : '')}${stat(soon, 'Within 45 min', soon ? 'warn' : '')}
+  const top = `<div class="tv-top">${stat(vis.length, 'Open now', '')}${stat(late, 'Late', late ? 'bad' : '')}${stat(soon, 'Within 45 min', soon ? 'warn' : '')}
     <div class="tv-next"><span class="lbl">Next up</span>` + (next
       ? `<span class="what">${esc(next.flt) || '—'}<i>&middot;</i>${esc((next.route || '').replace('-', ' → '))}<i>&middot;</i>${esc(fmtTime(next.time))}</span><span class="in${nm <= 45 ? ' hot' : ''}">${esc(fmtCountdown(nm))}</span>`
       : '<span class="what" style="color:#8fb2d4">Nothing scheduled</span>') + '</div></div>';
@@ -1270,15 +1274,22 @@ function renderTV() {
   const pg = pages[tvPage];
   const plane = '<svg viewBox="0 0 120 100" aria-hidden="true"><use href="#jet"/></svg>';
   let html = top;
+  if (!vis.length && !BARE) html += `<div class="tv-clear"><svg viewBox="0 0 120 100" aria-hidden="true"><use href="#jet"/></svg><div>Nothing on the board right now</div></div>`;
   secs.forEach(sec => {
+    if (!vis.length) return;
+    if (BARE && !sec.list.length) return;   // on the wall, don't show an empty section
     const rows = pg[sec.k]; if (!rows.length && !rg(pg, sec.k)) return;
     html += `<div class="tv-sec ${sec.k}">${plane}${sec.label} <small>${sec.sub}</small><em>${sec.list.length} on board</em></div>`;
     if (rows.length) html += `<div class="tv-cols"><div>Reason</div><div>Route</div><div>Flight</div><div>${sec.time}</div><div>Countdown</div><div>Gate</div><div>Tail</div><div>AWB</div><div>Comments</div></div>` + rows.map(j => tvRow(j, sec.time)).join('');
     else html += `<div class="tv-empty">${sec.none}</div>`;
   });
   const p = etParts(new Date());
-  html += `<div class="tv-foot"><span>UPDATED ${String(p.h).padStart(2,'0')}:${String(p.mi).padStart(2,'0')} ET</span><span class="dots">${tvPages > 1 ? 'PAGE ' + (tvPage + 1) + ' OF ' + tvPages : ''}${tvPages > 1 ? pages.map((_, i) => `<span class="${i === tvPage ? 'on' : ''}"></span>`).join('') : ''}</span></div>`;
+  if (!BARE) html += `<div class="tv-foot"><span>UPDATED ${String(p.h).padStart(2,'0')}:${String(p.mi).padStart(2,'0')} ET</span><span class="dots">${tvPages > 1 ? 'PAGE ' + (tvPage + 1) + ' OF ' + tvPages : ''}${tvPages > 1 ? pages.map((_, i) => `<span class="${i === tvPage ? 'on' : ''}"></span>`).join('') : ''}</span></div>`;
   root.innerHTML = html;
+  try {   // tell the wall page how much room this board needs, so it can use the rest for metrics
+    const kids = [...root.children].filter(e => !e.classList.contains('tv-foot')), last = kids[kids.length - 1];
+    parent.postMessage({ ctb: 1, n: vis.length, need: last ? Math.ceil(last.getBoundingClientRect().bottom) : 0, H: window.innerHeight, W: window.innerWidth, pages: tvPages }, '*');
+  } catch (e) {}
 }
 function rg(pg, k) { return pg[k].empty; }
 if (TV) {
