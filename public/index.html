@@ -428,19 +428,99 @@
   .empty-plane { width: 46px; height: 37px; fill: #d5dce6; margin-right: 16px; vertical-align: middle; transform: rotate(-14deg); }
   @media (prefers-reduced-motion: reduce) { .flyer, .countdown.late { animation: none; } }
 
+
+  /* ═══ NEW HEADER (all screens) ═══ */
+  .topbar { background: linear-gradient(110deg, #00203f 0%, #00376b 58%, #0b2b57 100%); border-bottom: 4px solid #c8102e; }
+  .topbar::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; top: auto; width: auto; height: 3px; border-radius: 0;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.7) 0 26px, transparent 26px 62px); opacity: .28; animation: runway 7s linear infinite; }
+  @keyframes runway { to { background-position: -62px 0; } }
+  .tail-stripe { background:
+    linear-gradient(105deg, transparent 0 66%, rgba(200,16,46,.85) 66% 67.2%, transparent 67.2% 68.6%, rgba(200,16,46,.45) 68.6% 69.4%, transparent 69.4% 70.6%, rgba(200,16,46,.2) 70.6% 71.2%, transparent 71.2%),
+    radial-gradient(ellipse at 90% 120%, rgba(60,140,220,.25), transparent 60%); }
+  .plane-silhouette { display: none; }
+  .flyer { top: 9px; width: 92px; height: 40px; animation: fly 42s linear infinite; z-index: 0; }
+  .flyer svg { width: 92px; height: 40px; fill: #fff; opacity: .9; filter: drop-shadow(0 7px 5px rgba(0,0,0,.45)); animation: bob 5s ease-in-out infinite; }
+  .flyer::before { right: 84px; top: 19px; width: 340px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45)); }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(3px) rotate(1.2deg); } }
+  .topbar-right { display: grid; grid-template-columns: auto auto; grid-template-areas: "date clock" "shift clock"; column-gap: 18px; row-gap: 6px; align-items: center; text-align: right; }
+  .topbar-right .date-label { grid-area: date; align-self: end; font-size: 13px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #cfe3f7; }
+  .topbar-right .shift-label { grid-area: shift; align-self: start; justify-self: end; margin: 0; padding: 4px 12px; border-radius: 999px; background: #c8102e; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; box-shadow: 0 2px 8px rgba(200,16,46,.45); }
+  .topbar-right .clock { grid-area: clock; display: flex; align-items: center; gap: 5px; font-size: 38px; text-shadow: none; }
+  .clock .dg { position: relative; width: 36px; height: 54px; line-height: 54px; text-align: center; font-weight: 800; color: #fff; border-radius: 8px; background: linear-gradient(#17304f 50%, #0d213a 50%); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 4px 10px rgba(0,0,0,.4); }
+  .clock .dg::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: rgba(0,0,0,.55); }
+  .clock .colon { color: #ff4d6a; font-weight: 800; animation: blink 2s steps(1) infinite; margin: 0 -1px; }
+  @keyframes blink { 50% { opacity: .15; } }
+  .clock .tz { align-self: flex-end; margin: 0 0 6px 6px; font-size: 11px; font-weight: 700; letter-spacing: .12em; color: #9fc0de; }
+
+  /* ═══ TV VIEW  (open the board with ?tv) ═══ */
+  #tv { display: none; }
+  html.tv body { background: #06111f; overflow: hidden; height: 100vh; }
+  html.tv body > *:not(.topbar):not(#tv):not(svg):not(script) { display: none !important; }
+  html.tv #tv { display: block; padding: .9vh 1.4vw 0; }
+  html.tv .topbar { padding: 1.3vh 1.8vw; }
+  html.tv .topbar-left h1 { font-size: 2.2vw; }
+  html.tv .topbar-left p { font-size: .95vw; }
+  html.tv .topbar-right .date-label { font-size: .95vw; }
+  html.tv .topbar-right .shift-label { font-size: .8vw; }
+  html.tv .clock { font-size: 2.7vw; }
+  html.tv .clock .dg { width: 2.5vw; height: 3.8vw; line-height: 3.8vw; }
+  .tv-top { display: grid; grid-template-columns: 11vw 11vw 11vw 1fr; gap: 1vw; margin-bottom: 1.2vh; }
+  .tv-stat { background: #0e2036; border-radius: 1vw; padding: 1vh 1vw; text-align: center; border: 1px solid #1c3553; }
+  .tv-stat b { display: block; font-size: 3.6vw; line-height: 1; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+  .tv-stat span { display: block; margin-top: .4vh; font-size: .95vw; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8fb2d4; }
+  .tv-stat.bad { background: #b91c1c; border-color: #ef4444; animation: tvpulse 1.6s ease-in-out infinite; } .tv-stat.bad span { color: #ffe1e1; }
+  .tv-stat.warn { background: #b45309; border-color: #f59e0b; } .tv-stat.warn span { color: #ffedd5; }
+  .tv-next { background: linear-gradient(100deg, #0d4a8a, #0a3567); border: 1px solid #2b6cb0; border-radius: 1vw; padding: 1vh 1.6vw; display: flex; align-items: center; gap: 1.6vw; min-width: 0; }
+  .tv-next .lbl { font-size: 1vw; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #8fd0ff; white-space: nowrap; }
+  .tv-next .what { flex: 1; font-size: 2.3vw; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tv-next .what i { font-style: normal; color: #8fd0ff; font-weight: 600; margin: 0 .5vw; }
+  .tv-next .in { font-size: 3.3vw; font-weight: 800; color: #fff; background: rgba(0,0,0,.28); padding: .2vh 1.2vw; border-radius: .8vw; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tv-next .in.hot { background: #dc2626; }
+  .tv-sec { display: flex; align-items: center; gap: .9vw; margin: .5vh 0 .6vh; font-size: 1.5vw; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
+  .tv-sec svg { width: 3.2vw; height: 2.6vw; fill: #fff; filter: drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
+  .tv-sec.out svg { transform: rotate(-14deg); } .tv-sec.inb svg { transform: scaleX(-1) rotate(-14deg); }
+  .tv-sec small { font-size: 1.05vw; font-weight: 600; letter-spacing: .02em; text-transform: none; color: #8fb2d4; }
+  .tv-sec em { margin-left: auto; font-style: normal; font-size: 1.1vw; color: #8fb2d4; }
+  .tv-cols, .tv-row { display: grid; grid-template-columns: 9.5% 14.5% 8.5% 11% 14.5% 5.5% 9% 12.5% 1fr; align-items: center; column-gap: .6vw; }
+  .tv-cols { padding: 0 1.2vw 0 1.6vw; font-size: .9vw; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #6f94b8; height: 3.2vh; }
+  .tv-row { position: relative; height: 6.4vh; margin-bottom: .5vh; padding: 0 1.2vw 0 1.6vw; border-radius: .8vw; background: #0e2036; color: #e8f1fa; font-size: 1.75vw; font-weight: 600; overflow: hidden; }
+  .tv-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: .65vw; background: var(--c); }
+  .tv-row.green { --c: #22c55e; } .tv-row.amber { --c: #f59e0b; background: #2a2210; } .tv-row.red { --c: #ef4444; background: #3a1216; } .tv-row.transit { --c: #38bdf8; background: #0c2a44; }
+  .tv-row.red.late { animation: tvpulse 1.6s ease-in-out infinite; }
+  .tv-row > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .tv-row .route { font-size: 2.1vw; font-weight: 800; color: #fff; }
+  .tv-row .route i { font-style: normal; color: #6f94b8; margin: 0 .3vw; }
+  .tv-row .flt { font-weight: 800; color: #fff; }
+  .tv-row .time { font-size: 2.5vw; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+  .tv-row .time s { font-size: 1.2vw; color: #7f9bb8; margin-right: .5vw; font-weight: 600; }
+  .tv-row .time .dly { display: inline-block; vertical-align: middle; margin-left: .5vw; padding: .1vh .6vw; font-size: .9vw; font-weight: 800; border-radius: .4vw; background: #f59e0b; color: #1c1300; letter-spacing: .04em; }
+  .tv-row .time .dly.early { background: #22c55e; color: #04210d; }
+  .tv-row .gate, .tv-row .tail { color: #cfe3f7; }
+  .tv-row .awb { font-weight: 700; color: #fff; font-size: 1.5vw; }
+  .tv-row .cm { font-size: 1.15vw; font-weight: 500; color: #9fc0de; }
+  .tv-row .badge { font-size: 1vw; padding: .5vh .6vw; border-radius: .5vw; white-space: nowrap; }
+  .tv-pill { display: inline-block; padding: .5vh 1vw; border-radius: 999px; font-size: 2.1vw; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+  .tv-pill.green { background: #15803d; } .tv-pill.amber { background: #d97706; } .tv-pill.red { background: #dc2626; } .tv-pill.transit { background: #0284c7; font-size: 1.4vw; }
+  .tv-empty { height: 5.4vh; display: flex; align-items: center; padding-left: 1.6vw; margin-bottom: .7vh; border-radius: .8vw; background: #0b1a2c; color: #6f94b8; font-size: 1.4vw; font-weight: 600; }
+  .tv-foot { position: fixed; left: 1.4vw; right: 1.4vw; bottom: .8vh; display: flex; justify-content: space-between; font-size: .85vw; color: #547596; letter-spacing: .06em; }
+  .tv-foot .dots span { display: inline-block; width: .6vw; height: .6vw; margin-left: .4vw; border-radius: 50%; background: #274463; } .tv-foot .dots span.on { background: #8fd0ff; }
+  @keyframes tvpulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.35); } }
 </style>
 </head>
 <body>
+<script>if(/[?&]tv(\b|=)/.test(location.search))document.documentElement.classList.add("tv");</script>
 <!-- jet artwork used around the board (original drawing) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="jet" viewBox="0 0 120 100">
-    <path d="M6,50 Q6,45 20,44.5 L100,46 Q118,48 118,50 Q118,52 100,54 L20,55.5 Q6,55 6,50 Z"/>
-    <path d="M54,46.5 L34,8 L46,8 L82,46 Z"/>
-    <path d="M54,53.5 L34,92 L46,92 L82,54 Z"/>
-    <path d="M18,45.5 L8,27 L16,27 L32,45.5 Z"/>
-    <path d="M18,54.5 L8,73 L16,73 L32,54.5 Z"/>
-    <ellipse cx="52" cy="25" rx="8" ry="3.2"/>
-    <ellipse cx="52" cy="75" rx="8" ry="3.2"/>
+    <path d="M3,47.6 L11,46.4 L94,45.4 C106,45.4 116,47.8 119,50 C116,52.2 106,54.6 94,54.6 L11,53.6 L3,52.4 Z"/>
+    <path d="M74,46 L37,3.5 L29,3.5 L48,46 Z"/>
+    <path d="M74,54 L37,96.5 L29,96.5 L48,54 Z"/>
+    <path d="M18,46 L6,29 L1,29 L8,46 Z"/>
+    <path d="M18,54 L6,71 L1,71 L8,54 Z"/>
+    <path d="M37,3.5 L33,0 L31,3.5 Z"/>
+    <path d="M37,96.5 L33,100 L31,96.5 Z"/>
+    <ellipse cx="58" cy="24.5" rx="9.5" ry="3.6"/>
+    <ellipse cx="58" cy="75.5" rx="9.5" ry="3.6"/>
   </symbol>
 </svg>
 
@@ -448,9 +528,6 @@
 <div class="topbar">
   <div class="tail-stripe"></div>
   <div class="flyer" aria-hidden="true"><svg viewBox="0 0 120 100"><use href="#jet"/></svg></div>
-  <div class="plane-silhouette" aria-hidden="true">
-    <svg viewBox="0 0 120 100"><use href="#jet"/></svg>
-  </div>
   <div class="topbar-left">
     <div>
       <h1>ATL Dept 593 <span class="hdr-accent">&mdash;</span> Live Board</h1>
@@ -458,11 +535,13 @@
     </div>
   </div>
   <div class="topbar-right">
-    <div class="clock" id="clock">--:--</div>
+    <div class="clock" id="clock"><span class="dg">-</span><span class="dg">-</span><span class="colon">:</span><span class="dg">-</span><span class="dg">-</span><span class="tz">ET</span></div>
     <div class="date-label" id="date-label"></div>
     <div class="shift-label" id="shift-label">Loading...</div>
   </div>
 </div>
+
+<div id="tv"></div>
 
 <!-- ALERT BANNER -->
 <div class="alert-banner" id="alert-banner">
@@ -940,8 +1019,9 @@ function getShiftLabel() {
 
 function tick() {
   const p=etParts(new Date());
-  document.getElementById('clock').textContent=String(p.h).padStart(2,'0')+':'+String(p.mi).padStart(2,'0');
-  document.getElementById('shift-label').textContent='Current: '+getShiftLabel();
+  const _t=String(p.h).padStart(2,'0')+String(p.mi).padStart(2,'0');
+  document.getElementById('clock').innerHTML='<span class="dg">'+_t[0]+'</span><span class="dg">'+_t[1]+'</span><span class="colon">:</span><span class="dg">'+_t[2]+'</span><span class="dg">'+_t[3]+'</span><span class="tz">ET</span>';
+  document.getElementById('shift-label').textContent=getShiftLabel();
   document.getElementById('date-label').textContent=new Intl.DateTimeFormat('en-US',{timeZone:TZ,weekday:'long',month:'long',day:'numeric'}).format(new Date());
   render();
   saveCache();
@@ -1088,6 +1168,92 @@ connectWS();
 buildTypeDropdown();
 tick();
 setInterval(tick,30000);
+
+// ── TV VIEW (?tv): big, read-from-across-the-room version of the board ──────
+const TV = document.documentElement.classList.contains('tv');
+let tvPage = 0, tvPages = 1;
+function tvRow(j, lab) {
+  const mins = minsTo(j), has = mins < 9999, late = !j.transit && has && mins <= 0;
+  const cls = j.transit ? 'transit' : (!has ? 'green' : mins <= 45 ? 'red' : mins <= 90 ? 'amber' : 'green');
+  let pill = '';
+  if (j.transit) pill = '<span class="tv-pill transit">&#9992; IN TRANSIT</span>';
+  else if (late) pill = `<span class="tv-pill red">LATE ${esc(fmtCountdown(-mins))}</span>`;
+  else if (has) pill = `<span class="tv-pill ${cls}">${esc(fmtCountdown(mins))}</span>`;
+  const d = timeShift(j);
+  const old = d !== 0 ? `<s>${esc(fmtTime(j.origTime))}</s>` : '';
+  const tag = d > 0 ? `<span class="dly">+${esc(fmtShift(d))}</span>` : d < 0 ? `<span class="dly early">&minus;${esc(fmtShift(d))}</span>` : '';
+  const rt = esc(j.route || '').split('-');
+  return `<div class="tv-row ${cls}${late ? ' late' : ''}">
+    <div>${typeBadge(j.type)}</div>
+    <div class="route">${rt.join('<i>&rarr;</i>')}</div>
+    <div class="flt">${esc(j.flt) || '—'}</div>
+    <div class="time">${old}${esc(fmtTime(j.time))}${tag}</div>
+    <div>${pill}</div>
+    <div class="gate">${esc(j.gate) || '—'}</div>
+    <div class="tail">${esc(j.tail) || '—'}</div>
+    <div class="awb">${esc(j.awb) || '—'}</div>
+    <div class="cm">${esc(j.comments)}</div>
+  </div>`;
+}
+function renderTV() {
+  const root = document.getElementById('tv'); if (!root) return;
+  const active = jobs.filter(j => !j.done);
+  const fromSt = j => (j.route||'').split('-')[0].trim().toUpperCase();
+  const toSt   = j => (j.route||'').split('-').slice(1).join('-').trim().toUpperCase();
+  const by = (a, b) => (a.transit ? 1 : 0) - (b.transit ? 1 : 0) || minsTo(a) - minsTo(b);
+  const out = active.filter(j => fromSt(j) === 'ATL').sort(by);
+  const inb = active.filter(j => fromSt(j) !== 'ATL' && toSt(j) === 'ATL').sort(by);
+
+  let late = 0, soon = 0, next = null, nm = Infinity;
+  active.filter(j => !j.transit).forEach(j => {
+    const m = minsTo(j); if (m >= 9999) return;
+    if (m <= 0) late++; else { if (m <= 45) soon++; if (m < nm) { nm = m; next = j; } }
+  });
+  const stat = (n, l, c) => `<div class="tv-stat ${c}"><b>${n}</b><span>${l}</span></div>`;
+  const top = `<div class="tv-top">${stat(active.length, 'Open now', '')}${stat(late, 'Late', late ? 'bad' : '')}${stat(soon, 'Within 45 min', soon ? 'warn' : '')}
+    <div class="tv-next"><span class="lbl">Next up</span>` + (next
+      ? `<span class="what">${esc(next.flt) || '—'}<i>&middot;</i>${esc((next.route || '').replace('-', ' → '))}<i>&middot;</i>${esc(fmtTime(next.time))}</span><span class="in${nm <= 45 ? ' hot' : ''}">${esc(fmtCountdown(nm))}</span>`
+      : '<span class="what" style="color:#8fb2d4">Nothing scheduled</span>') + '</div></div>';
+
+  // work out how many rows fit, then split into pages instead of cutting rows off
+  const H = window.innerHeight, rowH = H * 0.069, secH = H * 0.052, colH = H * 0.03, emptyH = H * 0.06;
+  const tvEl = document.getElementById('tv');
+  const topH = H * 0.115;
+  const avail = H - tvEl.getBoundingClientRect().top - topH - H * 0.07;
+  const secs = [{k:'out', label:'Outbound', sub:'we take it to the plane', time:'ETD', list:out, none:'No outbound shipments'},
+                {k:'inb', label:'Inbound',  sub:'we go pick it up',        time:'ETA', list:inb, none:'No inbound shipments'}];
+  const pages = [{out:[], inb:[]}]; let used = 0, cur = pages[0];
+  secs.forEach(sec => {
+    const items = sec.list.length ? sec.list : [null];
+    items.forEach(j => {
+      const need = (j ? rowH : emptyH) + (cur[sec.k].length || cur[sec.k].empty ? 0 : secH + colH);
+      if (used + need > avail && used > 0) { cur = {out:[], inb:[]}; pages.push(cur); used = 0; }
+      const need2 = (j ? rowH : emptyH) + secH + (j ? colH : 0);
+      const first = !cur[sec.k].length && !cur[sec.k].empty;
+      used += first ? need2 : (j ? rowH : emptyH);
+      if (j) cur[sec.k].push(j); else cur[sec.k].empty = true;
+    });
+  });
+  tvPages = pages.length; if (tvPage >= tvPages) tvPage = 0;
+  const pg = pages[tvPage];
+  const plane = '<svg viewBox="0 0 120 100" aria-hidden="true"><use href="#jet"/></svg>';
+  let html = top;
+  secs.forEach(sec => {
+    const rows = pg[sec.k]; if (!rows.length && !rg(pg, sec.k)) return;
+    html += `<div class="tv-sec ${sec.k}">${plane}${sec.label} <small>${sec.sub}</small><em>${sec.list.length} on board</em></div>`;
+    if (rows.length) html += `<div class="tv-cols"><div>Reason</div><div>Route</div><div>Flight</div><div>${sec.time}</div><div>Countdown</div><div>Gate</div><div>Tail</div><div>AWB</div><div>Comments</div></div>` + rows.map(j => tvRow(j, sec.time)).join('');
+    else html += `<div class="tv-empty">${sec.none}</div>`;
+  });
+  const p = etParts(new Date());
+  html += `<div class="tv-foot"><span>UPDATED ${String(p.h).padStart(2,'0')}:${String(p.mi).padStart(2,'0')} ET</span><span class="dots">${tvPages > 1 ? 'PAGE ' + (tvPage + 1) + ' OF ' + tvPages : ''}${tvPages > 1 ? pages.map((_, i) => `<span class="${i === tvPage ? 'on' : ''}"></span>`).join('') : ''}</span></div>`;
+  root.innerHTML = html;
+}
+function rg(pg, k) { return pg[k].empty; }
+if (TV) {
+  render = renderTV;
+  setInterval(() => { if (tvPages > 1) { tvPage = (tvPage + 1) % tvPages; renderTV(); } }, 12000);
+  window.addEventListener('resize', renderTV);
+}
 </script>
 
 <!-- MANAGE REASONS MODAL -->
