@@ -505,6 +505,26 @@
   .tv-foot { position: fixed; left: 1.4vw; right: 1.4vw; bottom: .8vh; display: flex; justify-content: space-between; font-size: .85vw; color: #547596; letter-spacing: .06em; }
   .tv-foot .dots span { display: inline-block; width: .6vw; height: .6vw; margin-left: .4vw; border-radius: 50%; background: #274463; } .tv-foot .dots span.on { background: #8fd0ff; }
   @keyframes tvpulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.35); } }
+
+  /* ═══ EXTRA POLISH ═══ */
+  .live { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; padding: 2px 9px 2px 8px; border-radius: 999px; background: rgba(34,197,94,.16); color: #7df0a6; font-size: .85em; font-weight: 800; letter-spacing: .14em; }
+  .live i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,.7); animation: livepulse 2s ease-out infinite; }
+  @keyframes livepulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.7); } 70%,100% { box-shadow: 0 0 0 .6vw rgba(34,197,94,0); } }
+  .tv-row .trk { position: absolute; left: 1.6vw; right: 1.2vw; bottom: .5vh; height: .35vh; border-radius: 3px; background: rgba(255,255,255,.09); overflow: visible; pointer-events: none; }
+  .tv-row .trk b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--c); opacity: .85; }
+  .tv-row .trk svg { position: absolute; top: 50%; width: 1.5vw; height: 1.2vw; margin: -.6vw 0 0 -.75vw; fill: #fff; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+  .tv-row.transit .trk b { width: 100% !important; opacity: .35; }
+  .tv-row.transit .trk svg { animation: cruise 5s linear infinite; left: 0 !important; }
+  @keyframes cruise { from { transform: translateX(0); } to { transform: translateX(calc((100vw - 4.2vw) * 1)); } }
+  .tv-row.red.late::before { background: repeating-linear-gradient(45deg, #ef4444 0 .4vw, #7f1d1d .4vw .8vw); }
+  .tv-next { position: relative; overflow: hidden; }
+  .tv-next::after { content: ''; position: absolute; top: 0; bottom: 0; width: 14vw; left: -20vw; background: linear-gradient(100deg, transparent, rgba(255,255,255,.14), transparent); animation: sheen 7s ease-in-out infinite; }
+  @keyframes sheen { 0% { left: -20vw; } 35%,100% { left: 110vw; } }
+  @keyframes rowin { from { opacity: 0; transform: translateY(1.2vh); } to { opacity: 1; transform: none; } }
+  #tv.flip .tv-row { animation: rowin .55s ease-out both; }
+  #tv.flip .tv-row:nth-of-type(2) { animation-delay: .06s; } #tv.flip .tv-row:nth-of-type(3) { animation-delay: .12s; } #tv.flip .tv-row:nth-of-type(4) { animation-delay: .18s; } #tv.flip .tv-row:nth-of-type(5) { animation-delay: .24s; } #tv.flip .tv-row:nth-of-type(6) { animation-delay: .3s; } #tv.flip .tv-row:nth-of-type(n+7) { animation-delay: .36s; }
+  .board-table tbody tr { transition: transform .15s, box-shadow .15s; } .board-table tbody tr:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.12); position: relative; }
+  @media (prefers-reduced-motion: reduce) { .live i, .tv-next::after, .tv-row.transit .trk svg { animation: none; } }
 </style>
 </head>
 <body>
@@ -531,7 +551,7 @@
   <div class="topbar-left">
     <div>
       <h1>ATL Dept 593 <span class="hdr-accent">&mdash;</span> Live Board</h1>
-      <p>Active shipments across all shifts &middot; 24/7</p>
+      <p><span class="live"><i></i>LIVE</span>Active shipments across all shifts &middot; 24/7</p>
     </div>
   </div>
   <div class="topbar-right">
@@ -1182,6 +1202,8 @@ function tvRow(j, lab) {
   const d = timeShift(j);
   const old = d !== 0 ? `<s>${esc(fmtTime(j.origTime))}</s>` : '';
   const tag = d > 0 ? `<span class="dly">+${esc(fmtShift(d))}</span>` : d < 0 ? `<span class="dly early">&minus;${esc(fmtShift(d))}</span>` : '';
+  const pct = j.transit ? 100 : (!has ? 2 : late ? 97 : Math.max(2, Math.min(97, (1 - mins / 180) * 100)));
+  const trk = `<div class="trk"><b style="width:${pct.toFixed(1)}%"></b><svg viewBox="0 0 120 100" aria-hidden="true" style="left:${pct.toFixed(1)}%"><use href="#jet"/></svg></div>`;
   const rt = esc(j.route || '').split('-');
   return `<div class="tv-row ${cls}${late ? ' late' : ''}">
     <div>${typeBadge(j.type)}</div>
@@ -1193,6 +1215,7 @@ function tvRow(j, lab) {
     <div class="tail">${esc(j.tail) || '—'}</div>
     <div class="awb">${esc(j.awb) || '—'}</div>
     <div class="cm">${esc(j.comments)}</div>
+    ${trk}
   </div>`;
 }
 function renderTV() {
@@ -1251,7 +1274,7 @@ function renderTV() {
 function rg(pg, k) { return pg[k].empty; }
 if (TV) {
   render = renderTV;
-  setInterval(() => { if (tvPages > 1) { tvPage = (tvPage + 1) % tvPages; renderTV(); } }, 12000);
+  setInterval(() => { if (tvPages > 1) { tvPage = (tvPage + 1) % tvPages; const r = document.getElementById('tv'); r.classList.add('flip'); renderTV(); setTimeout(() => r.classList.remove('flip'), 1000); } }, 12000);
   window.addEventListener('resize', renderTV);
 }
 </script>
