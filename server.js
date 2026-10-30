@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // Bump this on every release. Open boards (like the TV) reload themselves when it changes.
-const BUILD_ID = '2026-10-30.1';
+const BUILD_ID = '2026-10-30.2';
 const BOOT_ID = crypto.randomBytes(6).toString('hex');
 
 // Everything about time on this board is Eastern (Atlanta), no matter where the server runs.
@@ -151,7 +151,7 @@ function ensureHistory() {
   const have = new Set(history.map(h => h.jobId));
   let changed = false;
   jobs.forEach(j => {
-    if (j.done && !j.isTest && !have.has(j.id)) { history.push(historyEntry(j)); have.add(j.id); changed = true; }
+    if (j.done && !j.isTest && j.clearedBy !== 'Stood down' && !have.has(j.id)) { history.push(historyEntry(j)); have.add(j.id); changed = true; }
   });
   return changed;
 }
@@ -346,7 +346,7 @@ app.post('/api/jobs/:id/done', (req, res) => {
 
   // One history record per shipment, no matter how many times Done/Undo is clicked.
   history = history.filter(h => h.jobId !== j.id);
-  if (!j.isTest) history.push(historyEntry(j));
+  if (!j.isTest && j.clearedBy !== 'Stood down') history.push(historyEntry(j));
 
   sweep();
   persist();
