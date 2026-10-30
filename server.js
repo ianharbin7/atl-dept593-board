@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // Bump this on every release. Open boards (like the TV) reload themselves when it changes.
-const BUILD_ID = '2026-10-29.4';
+const BUILD_ID = '2026-10-30.1';
 const BOOT_ID = crypto.randomBytes(6).toString('hex');
 
 // Everything about time on this board is Eastern (Atlanta), no matter where the server runs.
@@ -234,6 +234,17 @@ app.use('/api/dashboard', (req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+// The phone app (a separate site) updates shipments here, so let that site, and only that site, do it.
+const APP_ORIGINS = ['https://atl-ct-hub.onrender.com'];
+app.use('/api/jobs', (req, res, next) => {
+  const o = req.get('Origin') || '';
+  if (APP_ORIGINS.includes(o) || /^http:\/\/localhost(:\d+)?$/.test(o)) {
+    res.set({ 'Access-Control-Allow-Origin': o, 'Vary': 'Origin', 'Access-Control-Allow-Methods': 'POST, PUT, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' });
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.get('/api/dashboard', (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
