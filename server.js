@@ -5,7 +5,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // Bump this on every release. Open boards (like the TV) reload themselves when it changes.
-const BUILD_ID = '2026-10-30.2';
+const BUILD_ID = '2026-10-30.3';
 const BOOT_ID = crypto.randomBytes(6).toString('hex');
 
 // Everything about time on this board is Eastern (Atlanta), no matter where the server runs.
@@ -260,6 +260,7 @@ app.post('/api/dashboard', (req, res) => {
     return res.status(400).json({ error: 'dashboard data needs ct, atl and all sections' });
   }
   const d = { asOf: String(b.asOf || new Date().toISOString()).slice(0, 40), ct: b.ct, atl: b.atl, all: b.all, trend: Array.isArray(b.trend) ? b.trend.slice(-400) : [] };
+  if (b.x && typeof b.x === 'object' && !Array.isArray(b.x)) d.x = b.x;   // extra detail for the wall (shipments, goals, tool-room activity)
   const text = JSON.stringify(d);
   if (text.length > 300000) return res.status(413).json({ error: 'too large' });
   saveJSON(DASH_FILE, d);
