@@ -530,6 +530,14 @@
   .stood-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 4px; background: #fee2e2; color: #b91c1c; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
   .tv-clear { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; margin-top: 8vh; color: #6f94b8; font-size: 2.4vw; font-weight: 700; }
   .tv-clear svg { width: 9vw; height: 7vw; fill: #2a4a6d; transform: rotate(-14deg); }
+
+  /* ═══ STATION BACKDROP: a faint outline of Delta's stations drifting the other way, behind everything ═══ */
+  .stn-bg { position: absolute; left: 0; top: 0; bottom: 4px; width: 100%; overflow: hidden; pointer-events: none; z-index: 0; display: flex; align-items: center; }
+  .stn-bg > div { display: flex; flex: none; white-space: nowrap; animation: stnflow 520s linear infinite; will-change: transform; }
+  .stn-bg i { font-style: normal; font-weight: 800; font-size: 64px; letter-spacing: .12em; padding-right: 54px; color: transparent; -webkit-text-stroke: 1px rgba(150,200,255,.09); }
+  html.tv .stn-bg i { font-size: 3.4vw; padding-right: 2.8vw; }
+  @keyframes stnflow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .stn-bg > div { animation: none; } }
 </style>
 </head>
 <body>
@@ -552,6 +560,7 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="tail-stripe"></div>
+  <div class="stn-bg" aria-hidden="true"><div><i>ATL</i><i>DTW</i><i>MSP</i><i>SLC</i><i>SEA</i><i>LAX</i><i>JFK</i><i>LGA</i><i>BOS</i><i>EWR</i><i>ORD</i><i>DFW</i><i>DEN</i><i>LAS</i><i>PHX</i><i>SAN</i><i>SFO</i><i>PDX</i><i>SJC</i><i>SMF</i><i>DCA</i><i>PHL</i><i>CLT</i><i>IAH</i><i>AUS</i><i>BNA</i><i>MCO</i><i>MIA</i><i>FLL</i><i>TPA</i><i>RDU</i><i>MSY</i><i>CVG</i><i>CMH</i><i>IND</i><i>MCI</i><i>STL</i><i>MEM</i><i>PIT</i><i>CLE</i><i>MKE</i><i>SAT</i><i>OKC</i><i>HNL</i><i>ANC</i><i>SJU</i><i>CUN</i><i>PUJ</i><i>NAS</i><i>MBJ</i><i>AMS</i><i>CDG</i><i>LHR</i><i>FRA</i><i>MAD</i><i>FCO</i><i>BCN</i><i>MUC</i><i>ZRH</i><i>DUB</i><i>LIS</i><i>ATH</i><i>VCE</i><i>MXP</i><i>EDI</i><i>CPH</i><i>KEF</i><i>TLV</i><i>DXB</i><i>ICN</i><i>NRT</i><i>HND</i><i>PEK</i><i>PVG</i><i>SYD</i><i>JNB</i><i>LOS</i><i>GRU</i><i>EZE</i><i>BOG</i><i>LIM</i><i>SCL</i><i>MEX</i><i>GDL</i><i>YYZ</i><i>YUL</i><i>YVR</i><i>ATL</i><i>DTW</i><i>MSP</i><i>SLC</i><i>SEA</i><i>LAX</i><i>JFK</i><i>LGA</i><i>BOS</i><i>EWR</i><i>ORD</i><i>DFW</i><i>DEN</i><i>LAS</i><i>PHX</i><i>SAN</i><i>SFO</i><i>PDX</i><i>SJC</i><i>SMF</i><i>DCA</i><i>PHL</i><i>CLT</i><i>IAH</i><i>AUS</i><i>BNA</i><i>MCO</i><i>MIA</i><i>FLL</i><i>TPA</i><i>RDU</i><i>MSY</i><i>CVG</i><i>CMH</i><i>IND</i><i>MCI</i><i>STL</i><i>MEM</i><i>PIT</i><i>CLE</i><i>MKE</i><i>SAT</i><i>OKC</i><i>HNL</i><i>ANC</i><i>SJU</i><i>CUN</i><i>PUJ</i><i>NAS</i><i>MBJ</i><i>AMS</i><i>CDG</i><i>LHR</i><i>FRA</i><i>MAD</i><i>FCO</i><i>BCN</i><i>MUC</i><i>ZRH</i><i>DUB</i><i>LIS</i><i>ATH</i><i>VCE</i><i>MXP</i><i>EDI</i><i>CPH</i><i>KEF</i><i>TLV</i><i>DXB</i><i>ICN</i><i>NRT</i><i>HND</i><i>PEK</i><i>PVG</i><i>SYD</i><i>JNB</i><i>LOS</i><i>GRU</i><i>EZE</i><i>BOG</i><i>LIM</i><i>SCL</i><i>MEX</i><i>GDL</i><i>YYZ</i><i>YUL</i><i>YVR</i></div></div>
   <div class="flyer" aria-hidden="true"><svg viewBox="0 0 120 100"><use href="#jet"/></svg></div>
   <div class="topbar-left">
     <div>
