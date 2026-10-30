@@ -525,6 +525,9 @@
   #tv.flip .tv-row:nth-of-type(2) { animation-delay: .06s; } #tv.flip .tv-row:nth-of-type(3) { animation-delay: .12s; } #tv.flip .tv-row:nth-of-type(4) { animation-delay: .18s; } #tv.flip .tv-row:nth-of-type(5) { animation-delay: .24s; } #tv.flip .tv-row:nth-of-type(6) { animation-delay: .3s; } #tv.flip .tv-row:nth-of-type(n+7) { animation-delay: .36s; }
   .board-table tbody tr { transition: transform .15s, box-shadow .15s; } .board-table tbody tr:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.12); position: relative; }
   @media (prefers-reduced-motion: reduce) { .live i, .tv-next::after, .tv-row.transit .trk svg { animation: none; } }
+  .cancel-btn { color: #b91c1c !important; border-color: #fca5a5 !important; background: #fff !important; font-size: 12px !important; }
+  .cancel-btn:hover { background: #fee2e2 !important; }
+  .stood-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 4px; background: #fee2e2; color: #b91c1c; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 </style>
 </head>
 <body>
@@ -947,11 +950,13 @@ function buildRow(job, timeLabel) {
   } else if (job.transit) {
     actionBtns = `${flightLink(job)}<span class="transit-badge">&#9992; IN TRANSIT</span>
       <button class="action-btn done-btn" onclick="doDone(${job.id},'${doneLabel}')" style="margin-left:6px">&check; ${doneLabel}</button>
-      <button class="action-btn undo-btn" onclick="doTransit(${job.id})" style="margin-left:4px;font-size:11px">Cancel</button>`;
+      <button class="action-btn undo-btn" onclick="doTransit(${job.id})" style="margin-left:4px;font-size:11px">Cancel</button>
+      <button class="action-btn cancel-btn" onclick="doStandDown(${job.id})" style="margin-left:4px" title="Stand down on this shipment">&#10005; Stand down</button>`;
   } else {
     actionBtns = `${flightLink(job)}<button class="action-btn transit-btn" onclick="doTransit(${job.id})" style="margin-right:5px">&#9992; En Route</button>
       <button class="action-btn" onclick="openEdit(${job.id})" style="margin-right:5px">&#9998; Edit</button>
-      <button class="action-btn done-btn" onclick="doDone(${job.id},'${doneLabel}')">&check; ${doneLabel}</button>`;
+      <button class="action-btn done-btn" onclick="doDone(${job.id},'${doneLabel}')" style="margin-right:5px">&check; ${doneLabel}</button>
+      <button class="action-btn cancel-btn" onclick="doStandDown(${job.id})" title="Stand down on this shipment">&#10005; Stand down</button>`;
   }
 
   const testTag = job.isTest ? `<span style="display:inline-block;font-size:10px;font-weight:700;color:#fff;background:#facc15;color:#713f12;padding:1px 6px;border-radius:4px;margin-right:6px;vertical-align:middle">TEST</span>` : '';
@@ -1017,7 +1022,7 @@ function render() {
         <td>${typeBadge(j.type)}</td>
         <td>${esc(j.route).replace('-','&rarr;')}</td>
         <td>${esc(j.ac)||'—'}</td><td>${esc(j.flt)||'—'}</td>
-        <td>${esc(j.clearedAt)||'—'}</td><td>${esc(j.gate)||'—'}</td><td>${esc(j.tail)||'—'}</td>
+        <td>${esc(j.clearedAt)||'—'}${j.clearedBy === 'Stood down' ? '<span class="stood-tag">Stood down</span>' : ''}</td><td>${esc(j.gate)||'—'}</td><td>${esc(j.tail)||'—'}</td>
         <td style="font-size:16px;font-weight:700;color:#aaa">${esc(j.awb)||'—'}</td>
         <td style="font-size:14px;color:#aaa;max-width:180px;white-space:normal">${esc(j.comments)}</td>
         <td><button class="action-btn undo-btn" onclick="doUndo(${j.id})">Undo</button></td>
@@ -1049,6 +1054,10 @@ function tick() {
 
 async function doTransit(id) { await api('POST',`/api/jobs/${id}/transit`); }
 async function doDone(id,label) { await api('POST',`/api/jobs/${id}/done`,{label}); }
+async function doStandDown(id) {
+  const j = jobs.find(x => x.id === id); if (!j) return;
+  if (confirm('Stand down on ' + (j.flt || j.route || 'this shipment') + '?\n\nIt will come off the board and show in Completed Today as stood down. You can Undo it there if you change your mind.')) await api('POST', `/api/jobs/${id}/done`, { label: 'Stood down' });
+}
 async function doUndo(id) { await api('POST',`/api/jobs/${id}/undo`); }
 
 function openModal() {
