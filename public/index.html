@@ -464,6 +464,21 @@
   html.tv .topbar-right .shift-label { font-size: .8vw; }
   html.tv .clock { font-size: 2.7vw; }
   html.tv .clock .dg { width: 2.5vw; height: 3.8vw; line-height: 3.8vw; }
+  /* real flip-clock digits: top flap falls, bottom flap lands */
+  .clock .dg { background: none; box-shadow: none; perspective: 24em; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+  .clock .dg::after { z-index: 6; }
+  .clock .dg .h { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .clock .dg .h i { position: absolute; left: 0; right: 0; height: 200%; font-style: normal; text-align: center; }
+  .clock .dg .top, .clock .dg .ftop { top: 0; background: linear-gradient(#1d3a5e, #15304f); border-radius: 8px 8px 0 0; }
+  .clock .dg .bot, .clock .dg .fbot { bottom: 0; background: linear-gradient(#0f2540, #0a1b31); border-radius: 0 0 8px 8px; }
+  .clock .dg .bot i, .clock .dg .fbot i { top: -100%; }
+  .clock .dg .ftop { transform-origin: 50% 100%; visibility: hidden; z-index: 4; }
+  .clock .dg .fbot { transform-origin: 50% 0; visibility: hidden; z-index: 3; transform: rotateX(90deg); }
+  .clock .dg.flip .ftop { visibility: visible; animation: flipTop .32s ease-in forwards; }
+  .clock .dg.flip .fbot { visibility: visible; animation: flipBot .32s ease-out .32s both; }
+  @keyframes flipTop { 0% { transform: rotateX(0); } 100% { transform: rotateX(-90deg); } }
+  @keyframes flipBot { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+  @media (prefers-reduced-motion: reduce) { .clock .dg.flip .ftop, .clock .dg.flip .fbot { animation-duration: 0s; animation-delay: 0s; } }
   .tv-top { display: grid; grid-template-columns: 11vw 11vw 11vw 1fr; gap: 1vw; margin-bottom: 1.2vh; }
   .tv-stat { background: #0e2036; border-radius: 1vw; padding: 1vh 1vw; text-align: center; border: 1px solid #1c3553; }
   .tv-stat b { display: block; font-size: 3.6vw; line-height: 1; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
@@ -534,10 +549,10 @@
   /* ═══ STATION BACKDROP: a faint outline of Delta's stations drifting the other way, behind everything ═══ */
   .stn-bg { position: absolute; left: 0; top: 0; bottom: 4px; width: 100%; overflow: hidden; pointer-events: none; z-index: 0; display: flex; align-items: center; }
   .stn-bg > div { display: flex; flex: none; white-space: nowrap; animation: stnflow 520s linear infinite; will-change: transform; }
-  .stn-bg i { font-style: normal; font-weight: 800; font-size: 64px; letter-spacing: .12em; padding-right: 54px; color: transparent; -webkit-text-stroke: 1px rgba(150,200,255,.09); }
+  .stn-bg i { font-style: normal; font-weight: 800; font-size: 64px; letter-spacing: .12em; padding-right: 54px; color: transparent; -webkit-text-stroke: 1.2px rgba(150,200,255,.24); }
   html.tv .stn-bg i { font-size: 3.4vw; padding-right: 2.8vw; }
   @keyframes stnflow { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  .stn-bg i.h { -webkit-text-stroke: 1.6px rgba(190,225,255,.24); }
+  .stn-bg i.h { -webkit-text-stroke: 1.8px rgba(205,232,255,.6); text-shadow: 0 0 .6vw rgba(150,210,255,.25); }
   @media (prefers-reduced-motion: reduce) { .stn-bg > div { animation: none; } }
 
   /* ═══ IDLE SCENES: when nothing is on the TV board, the empty space plays little animations ═══ */
@@ -594,11 +609,12 @@
   @keyframes skyfly { from { transform: translateX(0) translateY(0); } 50% { transform: translateX(62vw) translateY(-4vh); } to { transform: translateX(130vw) translateY(2vh); } }
 
   /* split-flap */
-  #idle .flap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4vw; background: radial-gradient(ellipse at 50% 40%, #0b1c33, #040d1a 70%); }
-  #idle .frow { display: flex; gap: .28vw; }
-  #idle .fl { display: inline-block; width: 2.3vw; height: 3.5vw; line-height: 3.5vw; text-align: center; font: 800 2.6vw/3.5vw "Segoe UI", system-ui, sans-serif; color: #ffe9a6; background: linear-gradient(#14263d 0 49.2%, #050b14 49.2% 50.8%, #101f33 50.8%); border-radius: .3vw; box-shadow: inset 0 0 .5vw rgba(0,0,0,.6), 0 .2vw .4vw rgba(0,0,0,.5); }
+  #idle .flap { position: absolute; inset: 0; --cw: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--cw) * .3); padding-bottom: 5%; background: radial-gradient(ellipse at 50% 40%, #0b1c33, #040d1a 70%); }
+  #idle .frow { display: flex; gap: calc(var(--cw) * .12); }
+  #idle .fl { display: inline-block; width: var(--cw); height: calc(var(--cw) * 1.5); text-align: center; font: 800 calc(var(--cw) * 1.05)/calc(var(--cw) * 1.5) "Segoe UI", system-ui, sans-serif; color: #ffe9a6; background: linear-gradient(#14263d 0 49.2%, #050b14 49.2% 50.8%, #101f33 50.8%); border-radius: calc(var(--cw) * .12); box-shadow: inset 0 0 calc(var(--cw) * .2) rgba(0,0,0,.6), 0 calc(var(--cw) * .08) calc(var(--cw) * .16) rgba(0,0,0,.5); }
   #idle .frow.hd .fl { color: #bfe3ff; }
   #idle .frow.tm .fl { color: #7df0a6; }
+  #idle .frow.rd .fl { color: #ff9aa8; }
   #idle .fl.sp { animation: flapflip .09s linear; }
   @keyframes flapflip { 0% { transform: scaleY(1); } 50% { transform: scaleY(.15); } 100% { transform: scaleY(1); } }
 
@@ -633,7 +649,7 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="tail-stripe"></div>
-  <div class="stn-bg" aria-hidden="true"><div><i class="h">ATL</i><i class="h">DTW</i><i class="h">MSP</i><i class="h">SLC</i><i>SEA</i><i class="h">LAX</i><i class="h">JFK</i><i>LGA</i><i>BOS</i><i>EWR</i><i>ORD</i><i>DFW</i><i>DEN</i><i>LAS</i><i>PHX</i><i>SAN</i><i>SFO</i><i>PDX</i><i>SJC</i><i>SMF</i><i>DCA</i><i>PHL</i><i>CLT</i><i>IAH</i><i>AUS</i><i>BNA</i><i>MCO</i><i>MIA</i><i>FLL</i><i>TPA</i><i>RDU</i><i>MSY</i><i>CVG</i><i>CMH</i><i>IND</i><i>MCI</i><i>STL</i><i>MEM</i><i>PIT</i><i>CLE</i><i>MKE</i><i>SAT</i><i>OKC</i><i>HNL</i><i>ANC</i><i>SJU</i><i>CUN</i><i>PUJ</i><i>NAS</i><i>MBJ</i><i>AMS</i><i>CDG</i><i>LHR</i><i>FRA</i><i>MAD</i><i>FCO</i><i>BCN</i><i>MUC</i><i>ZRH</i><i>DUB</i><i>LIS</i><i>ATH</i><i>VCE</i><i>MXP</i><i>EDI</i><i>CPH</i><i>KEF</i><i>TLV</i><i>DXB</i><i>ICN</i><i>NRT</i><i>HND</i><i>PEK</i><i>PVG</i><i>SYD</i><i>JNB</i><i>LOS</i><i>GRU</i><i>EZE</i><i>BOG</i><i>LIM</i><i>SCL</i><i>MEX</i><i>GDL</i><i>YYZ</i><i>YUL</i><i>YVR</i><i class="h">ATL</i><i class="h">DTW</i><i class="h">MSP</i><i class="h">SLC</i><i>SEA</i><i class="h">LAX</i><i class="h">JFK</i><i>LGA</i><i>BOS</i><i>EWR</i><i>ORD</i><i>DFW</i><i>DEN</i><i>LAS</i><i>PHX</i><i>SAN</i><i>SFO</i><i>PDX</i><i>SJC</i><i>SMF</i><i>DCA</i><i>PHL</i><i>CLT</i><i>IAH</i><i>AUS</i><i>BNA</i><i>MCO</i><i>MIA</i><i>FLL</i><i>TPA</i><i>RDU</i><i>MSY</i><i>CVG</i><i>CMH</i><i>IND</i><i>MCI</i><i>STL</i><i>MEM</i><i>PIT</i><i>CLE</i><i>MKE</i><i>SAT</i><i>OKC</i><i>HNL</i><i>ANC</i><i>SJU</i><i>CUN</i><i>PUJ</i><i>NAS</i><i>MBJ</i><i>AMS</i><i>CDG</i><i>LHR</i><i>FRA</i><i>MAD</i><i>FCO</i><i>BCN</i><i>MUC</i><i>ZRH</i><i>DUB</i><i>LIS</i><i>ATH</i><i>VCE</i><i>MXP</i><i>EDI</i><i>CPH</i><i>KEF</i><i>TLV</i><i>DXB</i><i>ICN</i><i>NRT</i><i>HND</i><i>PEK</i><i>PVG</i><i>SYD</i><i>JNB</i><i>LOS</i><i>GRU</i><i>EZE</i><i>BOG</i><i>LIM</i><i>SCL</i><i>MEX</i><i>GDL</i><i>YYZ</i><i>YUL</i><i>YVR</i></div></div>
+  <div class="stn-bg" aria-hidden="true"><div id="stn-row"></div></div>
   <div class="flyer" aria-hidden="true"><svg viewBox="0 0 120 100"><use href="#jet"/></svg></div>
   <div class="topbar-left">
     <div>
@@ -1127,10 +1143,40 @@ function getShiftLabel() {
   return SHIFT_LABELS[shiftKeyNow()];
 }
 
+// station backdrop: our 593 stations spread evenly, everything else shuffled (domestic + international mixed)
+(function () {
+  const HUBS = ['ATL', 'DTW', 'MSP', 'SLC', 'LAX', 'JFK'], ALL = ["ATL", "DTW", "MSP", "SLC", "SEA", "LAX", "JFK", "LGA", "BOS", "EWR", "ORD", "DFW", "DEN", "LAS", "PHX", "SAN", "SFO", "PDX", "SJC", "SMF", "DCA", "PHL", "CLT", "IAH", "AUS", "BNA", "MCO", "MIA", "FLL", "TPA", "RDU", "MSY", "CVG", "CMH", "IND", "MCI", "STL", "MEM", "PIT", "CLE", "MKE", "SAT", "OKC", "HNL", "ANC", "SJU", "CUN", "PUJ", "NAS", "MBJ", "AMS", "CDG", "LHR", "FRA", "MAD", "FCO", "BCN", "MUC", "ZRH", "DUB", "LIS", "ATH", "VCE", "MXP", "EDI", "CPH", "KEF", "TLV", "DXB", "ICN", "NRT", "HND", "PEK", "PVG", "SYD", "JNB", "LOS", "GRU", "EZE", "BOG", "LIM", "SCL", "MEX", "GDL", "YYZ", "YUL", "YVR"];
+  const rest = ALL.filter(c => !HUBS.includes(c));
+  for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+  const seq = rest.slice(), step = seq.length / HUBS.length;
+  HUBS.slice().sort(() => Math.random() - .5).forEach((h, k) => seq.splice(Math.floor(k * step + k + Math.random() * step * .6), 0, h));
+  const one = seq.map(c => '<i' + (HUBS.includes(c) ? ' class="h"' : '') + '>' + c + '</i>').join('');
+  const row = document.getElementById('stn-row'); if (row) row.innerHTML = one + one;
+})();
+function dgHtml(v) { return '<span class="h top"><i>' + v + '</i></span><span class="h bot"><i>' + v + '</i></span><span class="h ftop"><i>' + v + '</i></span><span class="h fbot"><i>' + v + '</i></span>'; }
+function clockSet(t) {
+  const c = document.getElementById('clock'); if (!c) return;
+  if (!c.dataset.built) {
+    c.innerHTML = '<span class="dg"></span><span class="dg"></span><span class="colon">:</span><span class="dg"></span><span class="dg"></span><span class="tz">ET</span>';
+    c.dataset.built = '1';
+  }
+  c.querySelectorAll('.dg').forEach((d, k) => {
+    const nv = t[k], ov = d.dataset.v;
+    if (ov === nv) return;
+    d.dataset.v = nv;
+    if (ov === undefined) { d.innerHTML = dgHtml(nv); return; }
+    const q = n => d.querySelector('.' + n + ' i');
+    q('top').textContent = nv; q('bot').textContent = ov; q('ftop').textContent = ov; q('fbot').textContent = nv;
+    d.classList.remove('flip'); void d.offsetWidth; d.classList.add('flip');
+    clearTimeout(d._ft);
+    d._ft = setTimeout(() => { q('bot').textContent = nv; q('ftop').textContent = nv; d.classList.remove('flip'); }, 700);
+  });
+}
+
 function tick() {
   const p=etParts(new Date());
   const _t=String(p.h).padStart(2,'0')+String(p.mi).padStart(2,'0');
-  document.getElementById('clock').innerHTML='<span class="dg">'+_t[0]+'</span><span class="dg">'+_t[1]+'</span><span class="colon">:</span><span class="dg">'+_t[2]+'</span><span class="dg">'+_t[3]+'</span><span class="tz">ET</span>';
+  clockSet(_t);
   document.getElementById('shift-label').textContent=getShiftLabel();
   document.getElementById('date-label').textContent=new Intl.DateTimeFormat('en-US',{timeZone:TZ,weekday:'long',month:'long',day:'numeric'}).format(new Date());
   render();
@@ -1313,6 +1359,7 @@ function tvRow(j, lab) {
   </div>`;
 }
 // ───────── idle scenes (TV view, only when nothing is on the board) ─────────
+const IDLE_R = 7, IDLE_C = 28;
 const IDLE = { built: false, i: 0, timer: null, flapTimer: null, scenes: [] };
 function idleGear(cx, cy, teeth, ro, ri, fill) {
   let pts = [];
@@ -1360,7 +1407,7 @@ function idleBuild() {
     `<div class="skyplane"><svg viewBox="0 0 120 100" aria-hidden="true"><use href="#jet"/></svg></div>` +
     ridge(['M0,200 L0,140 L80,105 L170,135 L260,90 L350,130 L450,100 L540,138 L640,95 L720,125 L800,140 L800,200 Z', 26, '#06142a'], 70) + `</div>`;
   // 4) split-flap
-  const fl = `<div class="flap"><div class="frow hd" data-r="0"></div><div class="frow" data-r="1"></div><div class="frow" data-r="2"></div><div class="frow tm" data-r="3"></div><div class="frow" data-r="4"></div></div>`;
+  const fl = `<div class="flap">${Array.from({ length: IDLE_R }, (_, k) => `<div class="frow" data-r="${k}"></div>`).join('')}</div>`;
   // 5) gears
   const gs = [[470, 330, 18, 170, 140, '#0c2540', 28, 'normal'], [681, 182, 12, 113, 93, '#0f2f50', 18.7, 'reverse'], [667, 468, 10, 95, 77, '#0d2a49', 15.6, 'reverse']];
   let g = `<svg class="full" viewBox="${VB}" preserveAspectRatio="xMidYMid slice"><rect width="1600" height="658" fill="#040d1a"/>` + gs.map(x => idleGear(x[0], x[1], x[2], x[3], x[4], x[5]).replace('__D__', x[6]).replace('__R__', x[7])).join('') +
@@ -1372,12 +1419,47 @@ function idleBuild() {
   IDLE.scenes = [...root.querySelectorAll('.sc')]; IDLE.dots = [...root.querySelectorAll('.dots span')];
   IDLE.sky = root.querySelector('.sky');
   IDLE.rows = [...root.querySelectorAll('.frow')];
-  const W = 24;
-  IDLE.rows.forEach(rw => { rw.innerHTML = Array.from({ length: W }, () => '<span class="fl"> </span>').join(''); });
+  IDLE.rows.forEach(rw => { rw.innerHTML = Array.from({ length: IDLE_C }, () => '<span class="fl"> </span>').join(''); });
+  idleLayout();
 }
-const FLAP_TXT = [['ATL DEPT 593 LIVE BOARD'], ['NOTHING ON THE BOARD', 'ALL SHIPMENTS CLEARED', 'NO TOOLS IN TRANSIT', 'THE LINE IS QUIET', 'ALL FLIGHTS ARE CLEAN'], ['CT IS STANDING BY', 'READY WHEN YOU ARE', 'ALL TOOLS ARE HOME', 'ENJOY THE CALM', 'COFFEE BREAK WEATHER'], null, ['STAY SAFE OUT THERE', 'ALL GOOD IN 593', 'GO DELTA', 'HAVE A GREAT SHIFT', 'WAITING FOR YOUR CALL']];
-function idleFlap(row, text) {
-  const cells = [...row.children], W = cells.length, t = (' '.repeat(Math.floor((W - text.length) / 2)) + text).padEnd(W, ' ').slice(0, W), CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const FLAP_POOL = {
+  nothing: ['NOTHING ON THE BOARD', 'ALL SHIPMENTS CLEARED', 'NO TOOLS IN TRANSIT', 'THE LINE IS QUIET', 'ALL FLIGHTS ARE CLEAN'],
+  ct: ['CT IS STANDING BY', 'READY WHEN YOU ARE', 'ALL TOOLS ARE HOME', 'ENJOY THE CALM', 'COFFEE BREAK WEATHER'],
+  close: ['STAY SAFE OUT THERE', 'ALL GOOD IN 593', 'GO DELTA', 'HAVE A GREAT SHIFT', 'WAITING FOR YOUR CALL'],
+  tips: ['LIFT WITH YOUR LEGS', 'WEAR YOUR PPE', 'KEEP AISLES CLEAR', 'WATCH FOR FORKLIFTS', 'REPORT HAZARDS EARLY', 'STAY HYDRATED', 'SLOW DOWN BE SAFE', 'EYES UP PHONES DOWN', 'CLEAN AS YOU GO', 'STAY ALERT', 'NO SHORTCUTS', 'ASK IF YOU ARE NOT SURE']
+};
+const flapPick = (a, n) => a[n % a.length];
+const flapLR = (l, r) => { l = String(l); r = String(r); const w = IDLE_C; if (l.length + r.length + 1 > w) l = l.slice(0, w - r.length - 1); return l + ' '.repeat(w - l.length - r.length) + r; };
+const flapMoney = n => { n = Number(n || 0); return n >= 1e6 ? '$' + (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? '$' + Math.round(n / 1e3) + 'K' : '$' + Math.round(n); };
+const flapNum = n => Number(n || 0).toLocaleString('en-US');
+function flapClock(tz) { return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()); }
+function flapShift() {
+  const lab = (typeof getShiftLabel === 'function' ? getShiftLabel() : '') || '', m = lab.match(/\((\d+):(\d+)([ap])–(\d+):(\d+)([ap])\)/);
+  const name = lab.replace(/\s*\(.*$/, '').toUpperCase();
+  if (!m) return [['SHIFT BOARD', 'hd'], ['', ''], [name, ''], ['', ''], ['', ''], ['', ''], ['', '']];
+  const to24 = (h, mi, ap) => ((+h % 12) + (ap === 'p' ? 12 : 0)) * 60 + +mi, end = to24(m[4], m[5], m[6]);
+  const p = etParts(new Date()), nowM = p.h * 60 + p.mi; let left = end - nowM; if (left < 0) left += 1440; if (left > 720 + 60) left = left % 1440;
+  const hh = String(Math.floor(end / 60)).padStart(2, '0'), mm = String(end % 60).padStart(2, '0');
+  return [['SHIFT BOARD', 'hd'], ['', ''], [name, ''], ['', ''], [flapLR('SHIFT ENDS', hh + ':' + mm), ''], [flapLR('TIME LEFT', Math.floor(left / 60) + 'H ' + String(left % 60).padStart(2, '0') + 'M'), 'tm'], ['', '']];
+}
+function flapPages(n) {
+  const p = etParts(new Date()), hm = String(p.h).padStart(2, '0') + ':' + String(p.mi).padStart(2, '0'), pg = [];
+  pg.push([['ATL DEPT 593 LIVE BOARD', 'hd'], ['', ''], [flapPick(FLAP_POOL.nothing, n), ''], [flapPick(FLAP_POOL.ct, n), ''], ['', ''], ['LOCAL TIME ' + hm, 'tm'], [flapPick(FLAP_POOL.close, n), '']]);
+  pg.push([[flapLR('STATION', 'STATUS'), 'hd'], [flapLR('ATL', 'HOME BASE'), 'tm'], [flapLR('LAX', 'NOTHING ON BOARD'), ''], [flapLR('SLC', 'NOTHING ON BOARD'), ''], [flapLR('MSP', 'NOTHING ON BOARD'), ''], [flapLR('DTW', 'NOTHING ON BOARD'), ''], [flapLR('JFK', 'NOTHING ON BOARD'), '']]);
+  pg.push([['WORLD CLOCK', 'hd'], [flapLR('ATLANTA', flapClock('America/New_York')), 'tm'], [flapLR('LOS ANGELES', flapClock('America/Los_Angeles')), ''], [flapLR('LONDON', flapClock('Europe/London')), ''], [flapLR('DUBAI', flapClock('Asia/Dubai')), ''], [flapLR('TOKYO', flapClock('Asia/Tokyo')), ''], [flapLR('SYDNEY', flapClock('Australia/Sydney')), '']]);
+  const d = IDLE.dash && IDLE.dash.ct;
+  if (d) pg.push([['CT TOOL NUMBERS', 'hd'], ['', ''], [flapLR('TOOLS OUT NOW', flapNum(d.out)), ''], [flapLR('VALUE OUT', flapMoney(d.value)), ''], [flapLR('OUT 30+ DAYS', flapNum(d.crit)), 'rd'], [flapLR('TOOLS RETURNED', flapNum(d.recovered)), 'tm'], [flapLR('RETURN RATE', Math.round((d.recoveryRate || 0) * 100) + ' PCT'), 'tm']]);
+  pg.push(flapShift());
+  const mt = IDLE.met;
+  if (mt && mt.total > 0) pg.push([[String(mt.monthLabel || 'THIS MONTH').toUpperCase(), 'hd'], ['', ''], [flapLR('SHIPMENTS', flapNum(mt.total)), ''], [flapLR('AOS', flapNum(mt.aos)), 'rd'], [flapLR('OUTBOUND', flapNum(mt.outbound)), ''], [flapLR('INBOUND', flapNum(mt.inbound)), ''], ['', '']]);
+  pg.push([['SAFETY FIRST', 'hd'], ['', ''], [flapPick(FLAP_POOL.tips, n), ''], ['', ''], [flapPick(FLAP_POOL.tips, n + 4), ''], ['', ''], [flapPick(FLAP_POOL.tips, n + 8), '']]);
+  return pg;
+}
+function idleFlap(row, text, cls) {
+  row.className = 'frow' + (cls ? ' ' + cls : '');
+  const cells = [...row.children], W = cells.length;
+  text = String(text || '').slice(0, W);
+  const t = text.length === W ? text : (' '.repeat(Math.floor((W - text.length) / 2)) + text).padEnd(W, ' '), CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   cells.forEach((c, k) => {
     if (c.textContent === t[k]) return;
     let n = 0, steps = 4 + (k % 7) + Math.floor(Math.random() * 3);
@@ -1385,10 +1467,35 @@ function idleFlap(row, text) {
   });
 }
 function idleTick(n) {
-  const p = etParts(new Date());
-  idleFlap(IDLE.rows[0], FLAP_TXT[0][0]);
-  [1, 2, 4].forEach(r => idleFlap(IDLE.rows[r], FLAP_TXT[r][n % FLAP_TXT[r].length]));
-  idleFlap(IDLE.rows[3], 'LOCAL TIME ' + String(p.h).padStart(2, '0') + ':' + String(p.mi).padStart(2, '0'));
+  const pages = flapPages(n), pg = pages[n % pages.length];
+  IDLE.rows.forEach((rw, k) => { const r = pg[k] || ['', '']; idleFlap(rw, r[0], r[1]); });
+}
+function idleLayout() {
+  const root = document.getElementById('idle'); if (!root || !IDLE.built) return;
+  const pw = root.clientWidth, ph = root.clientHeight; if (!pw || !ph) return;
+  const cw = Math.max(10, Math.floor(Math.min(pw * .94 / (IDLE_C * 1.12), ph * .8 / (IDLE_R * 1.5 + (IDLE_R - 1) * .3))));
+  const fl = root.querySelector('.flap'); if (fl) fl.style.setProperty('--cw', cw + 'px');
+}
+function idlePlace() {
+  const root = document.getElementById('idle'); if (!root) return;
+  const tt = document.querySelector('#tv .tv-top');
+  if (tt) {
+    let b = tt.getBoundingClientRect().bottom;
+    tt.querySelectorAll(':scope > *').forEach(e => { b = Math.max(b, e.getBoundingClientRect().bottom); });
+    if (b > 0) root.style.top = Math.round(b + window.innerHeight * .014) + 'px';
+  }
+  if (!IDLE.placed) { IDLE.placed = true; if (document.fonts && document.fonts.ready) document.fonts.ready.then(idlePlace); setTimeout(idlePlace, 900); window.addEventListener('resize', idlePlace); }
+  root.style.bottom = (/[?&]bare/.test(location.search) ? 1 : 5) + 'vh';
+  idleLayout();
+}
+function idleData() {
+  if (IDLE.dataAt && Date.now() - IDLE.dataAt < 600000) return; IDLE.dataAt = Date.now();
+  fetch('/api/dashboard').then(r => r.json()).then(d => { IDLE.dash = d; }).catch(() => {});
+  fetch('/api/metrics').then(r => r.json()).then(d => { IDLE.met = d; }).catch(() => {});
+}
+function idleNext() {
+  clearTimeout(IDLE.timer);
+  IDLE.timer = setTimeout(() => { idleShow(IDLE.i + 1); idleNext(); }, IDLE.i === 3 ? 56000 : 17000);
 }
 function idleShow(i) {
   IDLE.i = i % IDLE.scenes.length;
@@ -1396,14 +1503,14 @@ function idleShow(i) {
   IDLE.dots.forEach((d, k) => d.classList.toggle('on', k === IDLE.i));
   if (IDLE.i === 2) { const h = etParts(new Date()).h; IDLE.sky.dataset.tod = h >= 6 && h < 8 ? 'dawn' : h >= 8 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night'; }
   clearInterval(IDLE.flapTimer);
-  if (IDLE.i === 3) { let n = 0; idleTick(n++); IDLE.flapTimer = setInterval(() => idleTick(n++), 5000); }
+  if (IDLE.i === 3) { idleLayout(); IDLE.fn = IDLE.fn || 0; idleTick(IDLE.fn++); IDLE.flapTimer = setInterval(() => idleTick(IDLE.fn++), 7000); }
 }
 function idleSet(on) {
   const root = document.getElementById('idle'); if (!root) return;
   if (on) {
-    idleBuild();
-    if (!root.classList.contains('on')) { root.classList.add('on'); idleShow(Math.floor(Math.random() * 5)); clearInterval(IDLE.timer); IDLE.timer = setInterval(() => idleShow(IDLE.i + 1), 17000); }
-  } else if (root.classList.contains('on')) { root.classList.remove('on'); clearInterval(IDLE.timer); clearInterval(IDLE.flapTimer); }
+    idleBuild(); idlePlace(); idleData();
+    if (!root.classList.contains('on')) { root.classList.add('on'); idleShow(Math.floor(Math.random() * 5)); idleNext(); }
+  } else if (root.classList.contains('on')) { root.classList.remove('on'); clearTimeout(IDLE.timer); clearInterval(IDLE.flapTimer); }
 }
 
 function renderTV() {
