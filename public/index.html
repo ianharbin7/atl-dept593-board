@@ -491,6 +491,15 @@
   .tv-next .what i { font-style: normal; color: #8fd0ff; font-weight: 600; margin: 0 .5vw; }
   .tv-next .in { font-size: 3.3vw; font-weight: 800; color: #fff; background: rgba(0,0,0,.28); padding: .2vh 1.2vw; border-radius: .8vw; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tv-next .in.hot { background: #dc2626; }
+  .tv-next .what.idle { font-size: 1.9vw; color: #8fb2d4; flex: 0 0 auto; text-overflow: clip; }
+  .tv-next .idfly { flex: 1 1 0; min-width: 0; position: relative; align-self: stretch; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); }
+  .tv-next .idfly i { position: absolute; left: 0; right: 0; top: 50%; border-top: .2vh dashed rgba(143,208,255,.28); }
+  .tv-next .idfly svg { position: absolute; top: 50%; left: 0; width: 1.6vw; height: 1.3vw; margin-top: -.65vw; fill: rgba(255,255,255,.7); animation: idfly 40s linear infinite; }
+  @keyframes idfly { from { transform: translateX(-2vw); } to { transform: translateX(22vw); } }
+  @media (prefers-reduced-motion: reduce) { .tv-next .idfly svg { animation: none; left: 40%; } }
+  .tv-next .idb { display: flex; flex-direction: column; justify-content: center; padding: .2vh .9vw; border-radius: .8vw; background: rgba(0,0,0,.28); white-space: nowrap; }
+  .tv-next .idb b { font-size: 1.7vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tv-next .idb em { font-style: normal; font-size: .85vw; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8fd0ff; }
   .tv-sec { display: flex; align-items: center; gap: .9vw; margin: .5vh 0 .6vh; font-size: 1.5vw; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
   .tv-sec svg { width: 3.2vw; height: 2.6vw; fill: #fff; filter: drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
   .tv-sec.out svg { transform: rotate(-14deg); } .tv-sec.inb svg { transform: scaleX(-1) rotate(-14deg); }
@@ -533,8 +542,32 @@
   @keyframes cruise { from { transform: translateX(0); } to { transform: translateX(calc((100vw - 4.2vw) * 1)); } }
   .tv-row.red.late::before { background: repeating-linear-gradient(45deg, #ef4444 0 .4vw, #7f1d1d .4vw .8vw); }
   .tv-next { position: relative; overflow: hidden; }
-  .tv-next::after { content: ''; position: absolute; top: 0; bottom: 0; width: 14vw; left: -20vw; background: linear-gradient(100deg, transparent, rgba(255,255,255,.14), transparent); animation: sheen 7s ease-in-out infinite; }
+  .tv-next::after { content: ''; position: absolute; top: 0; bottom: 0; width: 14vw; left: -20vw; background: linear-gradient(100deg, transparent, rgba(255,255,255,.14), transparent); animation: sheen 26s ease-in-out infinite; }
   @keyframes sheen { 0% { left: -20vw; } 35%,100% { left: 110vw; } }
+  /* ── change animations: new jobs ease in with a cyan wash, finished jobs fade out, stat numbers count to their new value ── */
+  @keyframes fxIn { from { opacity: 0; transform: translateX(-2.2%); } 60% { opacity: 1; } to { opacity: 1; transform: none; } }
+  @keyframes fxWashTd { from { box-shadow: inset 0 0 0 999px rgba(56,189,248,.45); } to { box-shadow: inset 0 0 0 999px rgba(56,189,248,0); } }
+  @keyframes fxWashTv { 0% { box-shadow: 0 0 0 .22vw rgba(56,189,248,.95), 0 0 2.2vw rgba(56,189,248,.7); } 100% { box-shadow: 0 0 0 .22vw rgba(56,189,248,0), 0 0 0 rgba(56,189,248,0); } }
+  @keyframes fxOutTd { 0% { opacity: 1; box-shadow: inset 0 0 0 999px rgba(34,197,94,0); } 22% { opacity: 1; box-shadow: inset 0 0 0 999px rgba(34,197,94,.4); } 100% { opacity: 0; box-shadow: inset 0 0 0 999px rgba(34,197,94,.4); transform: translateX(2.5%); } }
+  @keyframes fxOutTv { 0% { opacity: 1; height: 6.4vh; margin-bottom: .5vh; } 25% { opacity: 1; box-shadow: 0 0 0 .22vw rgba(34,197,94,.9), 0 0 2vw rgba(34,197,94,.55); } 60% { opacity: 0; height: 6.4vh; margin-bottom: .5vh; } 100% { opacity: 0; height: 0; margin-bottom: 0; } }
+  @keyframes fxBump { 0% { transform: scale(1); } 30% { transform: scale(1.22); text-shadow: 0 0 .6em rgba(56,189,248,.9); } 100% { transform: scale(1); } }
+  tr.fx-in > td { animation: fxIn .7s cubic-bezier(.2,.7,.2,1) both; }
+  tr.fx-in > td:not(:first-child) { animation: fxIn .7s cubic-bezier(.2,.7,.2,1) both, fxWashTd 1.8s ease-out both; }
+  tr.fx-out > td { animation: fxOutTd .8s ease-in both; pointer-events: none; }
+  .tv-row.fx-in { animation: fxIn .8s cubic-bezier(.2,.7,.2,1) both, fxWashTv 2s ease-out both; }
+  .tv-row.fx-out { animation: fxOutTv .9s ease-in both; pointer-events: none; overflow: hidden; }
+  .fx-bump { display: inline-block; animation: fxBump .75s ease-out; }
+  .tv-stat b.fx-bump { display: block; }
+  @media (prefers-reduced-motion: reduce) { tr.fx-in > td, tr.fx-out > td, .tv-row.fx-in, .tv-row.fx-out, .fx-bump { animation: none; } }
+  /* flip-board countdown digits and a faint contrail behind each plane */
+  .fc { display: inline-block; position: relative; }
+  .fc.f { animation: fcFlip .6s cubic-bezier(.3,.6,.3,1) both; }
+  .fc.f::after { content: ''; position: absolute; left: -2%; right: -2%; top: 50%; height: 2px; margin-top: -1px; background: rgba(0,0,0,.45); }
+  @keyframes fcFlip { 0% { transform: perspective(.7em) rotateX(-90deg); opacity: .2; } 55% { opacity: 1; } 100% { transform: perspective(.7em) rotateX(0); } }
+  .tv-row .trk .cl { position: absolute; left: 0; right: 0; top: -1vh; bottom: -1vh; overflow: hidden; pointer-events: none; }
+  .tv-row .trk .ct { position: absolute; top: 50%; width: 9vw; height: .3vh; margin-top: -.15vh; right: calc(100% - var(--p, 0%)); border-radius: 99px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.4)); filter: blur(.1vh); box-shadow: 0 0 .5vh rgba(255,255,255,.12); }
+  .tv-row.transit .trk .ct { right: auto; left: -9vw; animation: cruise 5s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .fc.f, .tv-row.transit .trk .ct { animation: none; } }
   @keyframes rowin { from { opacity: 0; transform: translateY(1.2vh); } to { opacity: 1; transform: none; } }
   #tv.flip .tv-row { animation: rowin .55s ease-out both; }
   #tv.flip .tv-row:nth-of-type(2) { animation-delay: .06s; } #tv.flip .tv-row:nth-of-type(3) { animation-delay: .12s; } #tv.flip .tv-row:nth-of-type(4) { animation-delay: .18s; } #tv.flip .tv-row:nth-of-type(5) { animation-delay: .24s; } #tv.flip .tv-row:nth-of-type(6) { animation-delay: .3s; } #tv.flip .tv-row:nth-of-type(n+7) { animation-delay: .36s; }
@@ -1082,6 +1115,60 @@ function emptyRow(msg) {
   return `<tr class="empty-row"><td colspan="12"><svg class="empty-plane" viewBox="0 0 120 100" aria-hidden="true"><use href="#jet"/></svg>${msg}</td></tr>`;
 }
 
+// ── change animations ────────────────────────────────────────────────────────
+const FX = { st: {}, cnt: {}, raf: 0 };
+function fxApply(cont, allIds) {
+  if (typeof cont === 'string') cont = document.getElementById(cont); if (!cont) return;
+  const sel = cont.tagName === 'TBODY' ? 'tr[data-id]' : '.tv-row[data-id]';
+  const key = cont.id || 'x', st = FX.st[key] || (FX.st[key] = { all: null, born: {}, dying: {}, prev: [] }), now = performance.now();
+  const rows = [...cont.querySelectorAll(sel)], ids = rows.map(r => r.dataset.id), every = allIds || ids;
+  if (st.all) {
+    every.forEach(id => { if (!st.all.includes(id) && !st.born[id]) st.born[id] = now; });
+    st.prev.forEach(p => { if (!every.includes(p.id) && !st.dying[p.id]) st.dying[p.id] = { node: p.node, prevId: p.prevId, nextId: p.nextId, t: now }; });
+  }
+  every.forEach(id => { delete st.dying[id]; });
+  rows.forEach(r => { const b = st.born[r.dataset.id]; if (b != null && now - b < 1900) { r.classList.add('fx-in'); r.style.animationDelay = r.tagName === 'TR' ? '' : -(now - b) + 'ms'; if (r.tagName === 'TR') r.querySelectorAll(':scope > td').forEach(td => td.style.animationDelay = -(now - b) + 'ms'); } });
+  st.prev = rows.map((r, i) => { const c = r.cloneNode(true); c.classList.remove('fx-in'); c.style.animationDelay = ''; c.querySelectorAll('td').forEach(td => td.style.animationDelay = ''); return { id: r.dataset.id, node: c, prevId: i ? ids[i - 1] : null, nextId: ids[i + 1] || null }; });
+  st.all = every.slice();
+  Object.keys(st.dying).forEach(id => {
+    const d = st.dying[id], age = now - d.t; if (age > 900) { delete st.dying[id]; return; }
+    const after = d.prevId && rows.find(r => r.dataset.id === d.prevId), before = d.nextId && rows.find(r => r.dataset.id === d.nextId);
+    const g = d.node.cloneNode(true); g.classList.add('fx-out'); g.removeAttribute('data-id');
+    g.querySelectorAll('button,a').forEach(b => { b.disabled = true; b.removeAttribute('onclick'); });
+    const dl = -age + 'ms'; if (g.tagName === 'TR') g.querySelectorAll('td').forEach(td => td.style.animationDelay = dl); else g.style.animationDelay = dl;
+    if (after) after.after(g); else if (before) before.before(g); else return;
+    setTimeout(() => g.remove(), 900 - age);
+  });
+}
+function fxFlip(root) {
+  if (!root) return; FX.fl = FX.fl || {};
+  root.querySelectorAll('[data-flip]').forEach(el => {
+    const k = el.dataset.flip, t = el.textContent, prev = FX.fl[k]; FX.fl[k] = t;
+    if (prev == null || prev === t) return;
+    const a = [...t], b = [...prev], off = a.length - b.length;
+    el.innerHTML = a.map((ch, i) => { const j = i - off, same = j >= 0 && b[j] === ch; return ch === ' ' ? ' ' : '<span class="fc' + (same ? '' : ' f') + '">' + ch.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])) + '</span>'; }).join('');
+  });
+}
+function fxCount(root) {
+  if (!root) return; const now = performance.now();
+  root.querySelectorAll('[data-fxk]').forEach(el => {
+    const k = el.dataset.fxk, n = parseInt(el.textContent, 10); if (isNaN(n)) return;
+    const c = FX.cnt[k];
+    if (!c) { FX.cnt[k] = { from: n, to: n, t0: 0 }; return; }
+    if (n !== c.to) { c.from = fxVal(c, now); c.to = n; c.t0 = now; el.classList.add('fx-bump'); setTimeout(() => el.classList.remove('fx-bump'), 800); fxLoop(); }
+    if (now - c.t0 < 900) el.textContent = Math.round(fxVal(c, now));
+  });
+}
+const fxVal = (c, now) => { const k = Math.min(1, (now - c.t0) / 800), e = 1 - Math.pow(1 - k, 3); return c.from + (c.to - c.from) * e; };
+function fxLoop() {
+  if (FX.raf) return;
+  const step = t => {
+    let live = false; t = performance.now();
+    Object.keys(FX.cnt).forEach(k => { const c = FX.cnt[k]; if (t - c.t0 < 900) { live = true; document.querySelectorAll('[data-fxk="' + k + '"]').forEach(el => { el.textContent = Math.round(fxVal(c, t)); }); } });
+    if (live) FX.raf = requestAnimationFrame(step); else FX.raf = 0;
+  };
+  FX.raf = requestAnimationFrame(step);
+}
 function renderSummary(active) {
   const el = document.getElementById('summary-strip');
   if (!el) return;
@@ -1093,7 +1180,7 @@ function renderSummary(active) {
     if (m <= 0) late++;
     else { if (m <= 45) soon++; if (m < nm) { nm = m; next = j; } }
   });
-  const chip = (n, l, c) => `<div class="sum-chip ${c}"><span class="sum-n">${n}</span><span class="sum-l">${l}</span></div>`;
+  const chip = (n, l, c) => `<div class="sum-chip ${c}"><span class="sum-n" data-fxk="s:${l}">${n}</span><span class="sum-l">${l}</span></div>`;
   el.innerHTML = chip(active.length, 'Open now', '') +
     chip(late, 'Late', late ? 'bad' : '') +
     chip(soon, 'Leave within 45 min', soon ? 'warn' : '') +
@@ -1110,6 +1197,7 @@ function render() {
   const out = active.filter(j => fromSt(j)==='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
   const inb = active.filter(j => fromSt(j)!=='ATL' && toSt(j)==='ATL').sort((a,b)=>minsTo(a)-minsTo(b));
   renderSummary(out.concat(inb));   // only count what is actually on the board
+  fxCount(document.getElementById('summary-strip'));
   const dayStart = opDayStart();
   const done = jobs.filter(j => j.done && j.clearedAtISO && new Date(j.clearedAtISO).getTime() >= dayStart);
 
@@ -1117,7 +1205,7 @@ function render() {
   document.getElementById('inb-body').innerHTML = inb.length ? inb.map(j=>buildRow(j,'ETA')).join('') : emptyRow('No active inbound shipments');
 
   document.getElementById('done-body').innerHTML = done.length
-    ? done.map(j=>`<tr class="row-done">
+    ? done.map(j=>`<tr class="row-done" data-id="${j.id}">
         <td style="font-size:15px;font-weight:600;color:#aaa">${esc(j.date)}</td>
         <td class="${shiftClass(j.shift)}">${esc(j.shift)}</td>
         <td>${typeBadge(j.type)}</td>
@@ -1130,6 +1218,7 @@ function render() {
       </tr>`).join('')
     : `<tr class="empty-row"><td colspan="12">Nothing cleared yet today</td></tr>`;
 
+  fxApply('out-body'); fxApply('inb-body'); fxApply('done-body');
   const urgent = active.filter(j=>{ const m=minsTo(j); return m>0&&m<=45; });
   const banner = document.getElementById('alert-banner');
   if (urgent.length) {
@@ -1337,15 +1426,15 @@ function tvRow(j, lab) {
   const cls = j.transit ? 'transit' : (!has ? 'green' : mins <= 45 ? 'red' : mins <= 90 ? 'amber' : 'green');
   let pill = '';
   if (j.transit) pill = '<span class="tv-pill transit">&#9992; IN TRANSIT</span>';
-  else if (late) pill = `<span class="tv-pill red">LATE ${esc(fmtCountdown(-mins))}</span>`;
-  else if (has) pill = `<span class="tv-pill ${cls}">${esc(fmtCountdown(mins))}</span>`;
+  else if (late) pill = `<span class="tv-pill red" data-flip="p${j.id}">LATE ${esc(fmtCountdown(-mins))}</span>`;
+  else if (has) pill = `<span class="tv-pill ${cls}" data-flip="p${j.id}">${esc(fmtCountdown(mins))}</span>`;
   const d = timeShift(j);
   const old = d !== 0 ? `<s>${esc(fmtTime(j.origTime))}</s>` : '';
   const tag = d > 0 ? `<span class="dly">+${esc(fmtShift(d))}</span>` : d < 0 ? `<span class="dly early">&minus;${esc(fmtShift(d))}</span>` : '';
   const pct = j.transit ? 100 : (!has ? 2 : late ? 97 : Math.max(2, Math.min(97, (1 - mins / 180) * 100)));
-  const trk = `<div class="trk"><b style="width:${pct.toFixed(1)}%"></b><svg viewBox="0 0 120 100" aria-hidden="true" style="left:${pct.toFixed(1)}%"><use href="#jet"/></svg></div>`;
+  const trk = `<div class="trk"><i class="cl"><i class="ct" style="--p:${pct.toFixed(1)}%"></i></i><b style="width:${pct.toFixed(1)}%"></b><svg viewBox="0 0 120 100" aria-hidden="true" style="left:${pct.toFixed(1)}%"><use href="#jet"/></svg></div>`;
   const rt = esc(j.route || '').split('-');
-  return `<div class="tv-row ${cls}${late ? ' late' : ''}">
+  return `<div class="tv-row ${cls}${late ? ' late' : ''}" data-id="${j.id}">
     <div>${typeBadge(j.type)}</div>
     <div class="route">${rt.join('<i>&rarr;</i>')}</div>
     <div class="flt">${esc(j.flt) || '—'}</div>
@@ -1513,6 +1602,12 @@ function idleSet(on) {
   } else if (root.classList.contains('on')) { root.classList.remove('on'); clearTimeout(IDLE.timer); clearInterval(IDLE.flapTimer); }
 }
 
+function idleBits() {
+  const ds = opDayStart(), cl = jobs.filter(j => j.done && j.clearedAtISO && new Date(j.clearedAtISO).getTime() >= ds && j.clearedBy !== 'Stood down').sort((a, b) => new Date(b.clearedAtISO) - new Date(a.clearedAtISO));
+  const last = cl[0], ago = last ? Math.max(0, Math.round((Date.now() - new Date(last.clearedAtISO).getTime()) / 60000)) : null;
+  const when = ago == null ? '' : ago < 1 ? 'just now' : ago < 60 ? ago + 'm ago' : Math.floor(ago / 60) + 'h ' + String(ago % 60).padStart(2, '0') + 'm ago';
+  return '<span class="idfly"><i></i><svg viewBox="0 0 120 100" aria-hidden="true"><use href="#jet"/></svg></span>' + `<span class="idb"><b>${cl.length}</b><em>cleared today</em></span>` + (last ? `<span class="idb"><b>${esc((last.route || '').replace('-', ' \u2192 '))}</b><em>last cleared ${when}</em></span>` : '<span class="idb"><b>&mdash;</b><em>nothing cleared yet</em></span>');
+}
 function renderTV() {
   const root = document.getElementById('tv'); if (!root) return;
   const active = jobs.filter(j => !j.done);
@@ -1529,11 +1624,11 @@ function renderTV() {
     const m = minsTo(j); if (m >= 9999) return;
     if (m <= 0) late++; else { if (m <= 45) soon++; if (m < nm) { nm = m; next = j; } }
   });
-  const stat = (n, l, c) => `<div class="tv-stat ${c}"><b>${n}</b><span>${l}</span></div>`;
+  const stat = (n, l, c) => `<div class="tv-stat ${c}"><b data-fxk="t:${l}">${n}</b><span>${l}</span></div>`;
   const top = `<div class="tv-top">${stat(vis.length, 'Open now', '')}${stat(late, 'Late', late ? 'bad' : '')}${stat(soon, 'Within 45 min', soon ? 'warn' : '')}
     <div class="tv-next"><span class="lbl">Next up</span>` + (next
-      ? `<span class="what">${esc(next.flt) || '—'}<i>&middot;</i>${esc((next.route || '').replace('-', ' → '))}<i>&middot;</i>${esc(fmtTime(next.time))}</span><span class="in${nm <= 45 ? ' hot' : ''}">${esc(fmtCountdown(nm))}</span>`
-      : '<span class="what" style="color:#8fb2d4">Nothing scheduled</span>') + '</div></div>';
+      ? `<span class="what">${esc(next.flt) || '—'}<i>&middot;</i>${esc((next.route || '').replace('-', ' → '))}<i>&middot;</i>${esc(fmtTime(next.time))}</span><span class="in${nm <= 45 ? ' hot' : ''}" data-flip="next">${esc(fmtCountdown(nm))}</span>`
+      : '<span class="what idle">Nothing scheduled</span>' + idleBits()) + '</div></div>';
 
   // work out how many rows fit, then split into pages instead of cutting rows off
   const H = window.innerHeight, rowH = H * 0.069, secH = H * 0.052, colH = H * 0.03, emptyH = H * 0.06;
@@ -1570,6 +1665,7 @@ function renderTV() {
   const p = etParts(new Date());
   if (!BARE) html += `<div class="tv-foot"><span>UPDATED ${String(p.h).padStart(2,'0')}:${String(p.mi).padStart(2,'0')} ET</span><span class="dots">${tvPages > 1 ? 'PAGE ' + (tvPage + 1) + ' OF ' + tvPages : ''}${tvPages > 1 ? pages.map((_, i) => `<span class="${i === tvPage ? 'on' : ''}"></span>`).join('') : ''}</span></div>`;
   root.innerHTML = html;
+  fxApply(root, vis.map(j => String(j.id))); fxCount(root); fxFlip(root);
   try {   // tell the wall page how much room this board needs, so it can use the rest for metrics
     const kids = [...root.children].filter(e => !e.classList.contains('tv-foot')), last = kids[kids.length - 1];
     parent.postMessage({ ctb: 1, n: vis.length, need: last ? Math.ceil(last.getBoundingClientRect().bottom) : 0, H: window.innerHeight, W: window.innerWidth, pages: tvPages }, '*');
