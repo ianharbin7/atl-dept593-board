@@ -489,14 +489,17 @@
   .tv-next .lbl { font-size: 1vw; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #8fd0ff; white-space: nowrap; }
   .tv-next .what { flex: 1; font-size: 2.3vw; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tv-next .what i { font-style: normal; color: #8fd0ff; font-weight: 600; margin: 0 .5vw; }
-  .tv-next .in { font-size: 3.3vw; font-weight: 800; color: #fff; background: rgba(0,0,0,.28); padding: .2vh 1.2vw; border-radius: .8vw; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tv-next .in { font-size: 3.7vw; line-height: .95; font-weight: 800; color: #fff; background: rgba(0,0,0,.28); padding: .35vh 1.2vw .25vh; border-radius: .8vw; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tv-next .in.hot { background: #dc2626; }
   .tv-next .what.idle { font-size: 1.9vw; color: #8fb2d4; flex: 0 0 auto; text-overflow: clip; }
-  .tv-next .idfly { flex: 1 1 0; min-width: 0; position: relative; align-self: stretch; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); }
-  .tv-next .idfly i { position: absolute; left: 0; right: 0; top: 50%; border-top: .2vh dashed rgba(143,208,255,.28); }
-  .tv-next .idfly svg { position: absolute; top: 50%; left: 0; width: 1.6vw; height: 1.3vw; margin-top: -.65vw; fill: rgba(255,255,255,.7); animation: idfly 40s linear infinite; }
-  @keyframes idfly { from { transform: translateX(-2vw); } to { transform: translateX(22vw); } }
-  @media (prefers-reduced-motion: reduce) { .tv-next .idfly svg { animation: none; left: 40%; } }
+  .tv-next .idfly { flex: 1 1 0; min-width: 0; align-self: stretch; display: flex; align-items: center; justify-content: center; }
+  .tv-next .idr { position: relative; height: 86%; aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: radial-gradient(circle, transparent 0 22%, rgba(143,208,255,.30) 22.6% 24%, transparent 24.6% 48%, rgba(143,208,255,.26) 48.6% 50%, transparent 50.6% 73%, rgba(143,208,255,.24) 73.6% 75%, transparent 75.6%), linear-gradient(rgba(143,208,255,.18), rgba(143,208,255,.18)) center / 1px 100% no-repeat, linear-gradient(rgba(143,208,255,.18), rgba(143,208,255,.18)) center / 100% 1px no-repeat, rgba(2,14,30,.55); box-shadow: 0 0 0 .15vw rgba(143,208,255,.35), inset 0 0 1.2vw rgba(0,0,0,.5); }
+  .tv-next .idr::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(120,225,255,0) 0deg, rgba(120,225,255,0) 250deg, rgba(120,225,255,.5) 360deg); animation: idsweep 9s linear infinite; }
+  .tv-next .idr b { position: absolute; width: .32vw; height: .32vw; border-radius: 50%; background: #bfeaff; box-shadow: 0 0 .5vw #7fd8ff; opacity: 0; animation: idblip 9s linear infinite; }
+  .tv-next .idr .b1 { left: 62%; top: 26%; animation-delay: .6s; } .tv-next .idr .b2 { left: 30%; top: 60%; animation-delay: 6.1s; } .tv-next .idr .b3 { left: 70%; top: 66%; animation-delay: 3.2s; }
+  @keyframes idsweep { to { transform: rotate(360deg); } }
+  @keyframes idblip { 0% { opacity: 1; } 55% { opacity: 0; } 100% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .tv-next .idr::before, .tv-next .idr b { animation: none; } }
   .tv-next .idb { display: flex; flex-direction: column; justify-content: center; padding: .2vh .9vw; border-radius: .8vw; background: rgba(0,0,0,.28); white-space: nowrap; }
   .tv-next .idb b { font-size: 1.7vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .tv-next .idb em { font-style: normal; font-size: .85vw; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8fd0ff; }
@@ -538,7 +541,7 @@
   .tv-row .trk b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--c); opacity: .85; }
   .tv-row .trk svg { position: absolute; top: 50%; width: 1.5vw; height: 1.2vw; margin: -.6vw 0 0 -.75vw; fill: #fff; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
   .tv-row.transit .trk b { width: 100% !important; opacity: .35; }
-  .tv-row.transit .trk svg { animation: cruise 5s linear infinite; left: 0 !important; }
+  .tv-row.transit .trk svg { animation: cruise 7200s linear both; animation-delay: var(--tr, 0s); left: 0 !important; }
   @keyframes cruise { from { transform: translateX(0); } to { transform: translateX(calc((100vw - 4.2vw) * 1)); } }
   .tv-row.red.late::before { background: repeating-linear-gradient(45deg, #ef4444 0 .4vw, #7f1d1d .4vw .8vw); }
   .tv-next { position: relative; overflow: hidden; }
@@ -561,12 +564,11 @@
   @media (prefers-reduced-motion: reduce) { tr.fx-in > td, tr.fx-out > td, .tv-row.fx-in, .tv-row.fx-out, .fx-bump { animation: none; } }
   /* flip-board countdown digits and a faint contrail behind each plane */
   .fc { display: inline-block; position: relative; }
-  .fc.f { animation: fcFlip .6s cubic-bezier(.3,.6,.3,1) both; }
-  .fc.f::after { content: ''; position: absolute; left: -2%; right: -2%; top: 50%; height: 2px; margin-top: -1px; background: rgba(0,0,0,.45); }
-  @keyframes fcFlip { 0% { transform: perspective(.7em) rotateX(-90deg); opacity: .2; } 55% { opacity: 1; } 100% { transform: perspective(.7em) rotateX(0); } }
+  .fc.f { animation: fcFlip .55s cubic-bezier(.2,.8,.3,1) both; }
+  @keyframes fcFlip { 0% { transform: translateY(.55em); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; opacity: 1; } }
   .tv-row .trk .cl { position: absolute; left: 0; right: 0; top: -1vh; bottom: -1vh; overflow: hidden; pointer-events: none; }
   .tv-row .trk .ct { position: absolute; top: 50%; width: 9vw; height: .3vh; margin-top: -.15vh; right: calc(100% - var(--p, 0%)); border-radius: 99px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.4)); filter: blur(.1vh); box-shadow: 0 0 .5vh rgba(255,255,255,.12); }
-  .tv-row.transit .trk .ct { right: auto; left: -9vw; animation: cruise 5s linear infinite; }
+  .tv-row.transit .trk .ct { right: auto; left: -9vw; animation: cruise 7200s linear both; animation-delay: var(--tr, 0s); }
   @media (prefers-reduced-motion: reduce) { .fc.f, .tv-row.transit .trk .ct { animation: none; } }
   @keyframes rowin { from { opacity: 0; transform: translateY(1.2vh); } to { opacity: 1; transform: none; } }
   #tv.flip .tv-row { animation: rowin .55s ease-out both; }
@@ -1421,6 +1423,12 @@ setInterval(tick,30000);
 // ── TV VIEW (?tv): big, read-from-across-the-room version of the board ──────
 const TV = document.documentElement.classList.contains('tv');
 let tvPage = 0, tvPages = 1;
+// how long a shipment has been on its way (the plane crosses the track in 2 hours)
+function transitSecs(j) {
+  let t0 = j.transitAtISO ? new Date(j.transitAtISO).getTime() : 0;
+  try { const k = 'ctr' + j.id; if (!t0) { t0 = +localStorage.getItem(k) || 0; if (!t0) { t0 = Date.now(); localStorage.setItem(k, t0); } } } catch (e) { if (!t0) t0 = Date.now(); }
+  return Math.max(0, Math.min(7200, Math.round((Date.now() - t0) / 1000)));
+}
 function tvRow(j, lab) {
   const mins = minsTo(j), has = mins < 9999, late = !j.transit && has && mins <= 0;
   const cls = j.transit ? 'transit' : (!has ? 'green' : mins <= 45 ? 'red' : mins <= 90 ? 'amber' : 'green');
@@ -1432,7 +1440,8 @@ function tvRow(j, lab) {
   const old = d !== 0 ? `<s>${esc(fmtTime(j.origTime))}</s>` : '';
   const tag = d > 0 ? `<span class="dly">+${esc(fmtShift(d))}</span>` : d < 0 ? `<span class="dly early">&minus;${esc(fmtShift(d))}</span>` : '';
   const pct = j.transit ? 100 : (!has ? 2 : late ? 97 : Math.max(2, Math.min(97, (1 - mins / 180) * 100)));
-  const trk = `<div class="trk"><i class="cl"><i class="ct" style="--p:${pct.toFixed(1)}%"></i></i><b style="width:${pct.toFixed(1)}%"></b><svg viewBox="0 0 120 100" aria-hidden="true" style="left:${pct.toFixed(1)}%"><use href="#jet"/></svg></div>`;
+  const tre = j.transit ? transitSecs(j) : 0;
+  const trk = `<div class="trk"${j.transit ? ` style="--tr:-${tre}s"` : ''}><i class="cl"><i class="ct" style="--p:${pct.toFixed(1)}%"></i></i><b style="width:${pct.toFixed(1)}%"></b><svg viewBox="0 0 120 100" aria-hidden="true" style="left:${pct.toFixed(1)}%"><use href="#jet"/></svg></div>`;
   const rt = esc(j.route || '').split('-');
   return `<div class="tv-row ${cls}${late ? ' late' : ''}" data-id="${j.id}">
     <div>${typeBadge(j.type)}</div>
@@ -1606,7 +1615,7 @@ function idleBits() {
   const ds = opDayStart(), cl = jobs.filter(j => j.done && j.clearedAtISO && new Date(j.clearedAtISO).getTime() >= ds && j.clearedBy !== 'Stood down').sort((a, b) => new Date(b.clearedAtISO) - new Date(a.clearedAtISO));
   const last = cl[0], ago = last ? Math.max(0, Math.round((Date.now() - new Date(last.clearedAtISO).getTime()) / 60000)) : null;
   const when = ago == null ? '' : ago < 1 ? 'just now' : ago < 60 ? ago + 'm ago' : Math.floor(ago / 60) + 'h ' + String(ago % 60).padStart(2, '0') + 'm ago';
-  return '<span class="idfly"><i></i><svg viewBox="0 0 120 100" aria-hidden="true"><use href="#jet"/></svg></span>' + `<span class="idb"><b>${cl.length}</b><em>cleared today</em></span>` + (last ? `<span class="idb"><b>${esc((last.route || '').replace('-', ' \u2192 '))}</b><em>last cleared ${when}</em></span>` : '<span class="idb"><b>&mdash;</b><em>nothing cleared yet</em></span>');
+  return '<span class="idfly"><span class="idr"><b class="b1"></b><b class="b2"></b><b class="b3"></b></span></span>' + `<span class="idb"><b>${cl.length}</b><em>cleared today</em></span>` + (last ? `<span class="idb"><b>${esc((last.route || '').replace('-', ' \u2192 '))}</b><em>last cleared ${when}</em></span>` : '<span class="idb"><b>&mdash;</b><em>nothing cleared yet</em></span>');
 }
 function renderTV() {
   const root = document.getElementById('tv'); if (!root) return;
