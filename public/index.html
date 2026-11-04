@@ -510,7 +510,7 @@
   .tv-sec em { margin-left: auto; font-style: normal; font-size: 1.1vw; color: #8fb2d4; }
   .tv-cols, .tv-row { display: grid; grid-template-columns: 9.5% 14.5% 8.5% 11% 14.5% 5.5% 9% 12.5% 1fr; align-items: center; column-gap: .6vw; }
   .tv-cols { padding: 0 1.2vw 0 1.6vw; font-size: .9vw; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #6f94b8; height: 3.2vh; }
-  .tv-row { position: relative; height: 6.4vh; margin-bottom: .5vh; padding: 0 1.2vw 0 1.6vw; border-radius: .8vw; background: #0e2036; color: #e8f1fa; font-size: 1.75vw; font-weight: 600; overflow: hidden; }
+  .tv-row { position: relative; height: 6.4vh; margin-bottom: .5vh; padding: 0 1.2vw .8vh 1.6vw; border-radius: .8vw; background: #0e2036; color: #e8f1fa; font-size: 1.75vw; font-weight: 600; overflow: hidden; }
   .tv-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: .65vw; background: var(--c); }
   .tv-row.green { --c: #22c55e; } .tv-row.amber { --c: #f59e0b; background: #2a2210; } .tv-row.red { --c: #ef4444; background: #3a1216; } .tv-row.transit { --c: #38bdf8; background: #0c2a44; }
   .tv-row.red.late { animation: tvpulse 1.6s ease-in-out infinite; }
@@ -525,7 +525,7 @@
   .tv-row .gate, .tv-row .tail { color: #cfe3f7; }
   .tv-row .awb { font-weight: 700; color: #fff; font-size: 1.5vw; }
   .tv-row .cm { font-size: 1.15vw; font-weight: 500; color: #9fc0de; }
-  .tv-row .badge { font-size: 1vw; padding: .5vh .6vw; border-radius: .5vw; white-space: nowrap; }
+  .tv-row .badge { font-size: 1.6vw; padding: .5vh .5vw; border-radius: .6vw; white-space: nowrap; line-height: 1.15; }
   .tv-pill { display: inline-block; padding: .5vh 1vw; border-radius: 999px; font-size: 2.1vw; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
   .tv-pill.green { background: #15803d; } .tv-pill.amber { background: #d97706; } .tv-pill.red { background: #dc2626; } .tv-pill.transit { background: #0284c7; font-size: 1.4vw; }
   .tv-empty { height: 5.4vh; display: flex; align-items: center; padding-left: 1.6vw; margin-bottom: .7vh; border-radius: .8vw; background: #0b1a2c; color: #6f94b8; font-size: 1.4vw; font-weight: 600; }
