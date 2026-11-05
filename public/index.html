@@ -491,19 +491,18 @@
   .tv-next .what i { font-style: normal; color: #8fd0ff; font-weight: 600; margin: 0 .5vw; }
   .tv-next .in { font-size: 3.7vw; line-height: .95; font-weight: 800; color: #fff; background: rgba(0,0,0,.28); padding: .35vh 1.2vw .25vh; border-radius: .8vw; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tv-next .in.hot { background: #dc2626; }
-  .tv-next .what.idle { font-size: 1.9vw; color: #8fb2d4; flex: 0 0 auto; text-overflow: clip; }
-  .tv-next .idfly { flex: 1 0 7vh; container-type: size; min-width: 0; align-self: stretch; display: flex; align-items: center; justify-content: center; }
-  .tv-next .idr { position: relative; flex: none; width: min(86cqh, 100cqw); height: min(86cqh, 100cqw); border-radius: 50%; overflow: hidden; background: radial-gradient(circle, transparent 0 22%, rgba(143,208,255,.30) 22.6% 24%, transparent 24.6% 48%, rgba(143,208,255,.26) 48.6% 50%, transparent 50.6% 73%, rgba(143,208,255,.24) 73.6% 75%, transparent 75.6%), linear-gradient(rgba(143,208,255,.18), rgba(143,208,255,.18)) center / 1px 100% no-repeat, linear-gradient(rgba(143,208,255,.18), rgba(143,208,255,.18)) center / 100% 1px no-repeat, rgba(2,14,30,.55); box-shadow: 0 0 0 .15vw rgba(143,208,255,.35), inset 0 0 1.2vw rgba(0,0,0,.5); }
-  .tv-next .idr::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(120,225,255,0) 0deg, rgba(120,225,255,0) 250deg, rgba(120,225,255,.5) 360deg); animation: idsweep 9s linear infinite; }
-  .tv-next .idr b { position: absolute; width: .32vw; height: .32vw; border-radius: 50%; background: #bfeaff; box-shadow: 0 0 .5vw #7fd8ff; opacity: 0; animation: idblip 9s linear infinite; }
-  .tv-next .idr .b1 { left: 62%; top: 26%; animation-delay: .6s; } .tv-next .idr .b2 { left: 30%; top: 60%; animation-delay: 6.1s; } .tv-next .idr .b3 { left: 70%; top: 66%; animation-delay: 3.2s; }
-  @keyframes idsweep { to { transform: rotate(360deg); } }
-  @keyframes idblip { 0% { opacity: 1; } 55% { opacity: 0; } 100% { opacity: 0; } }
-  @media (prefers-reduced-motion: reduce) { .tv-next .idr::before, .tv-next .idr b { animation: none; } }
+  .tv-next .what.idle { font-size: 1.7vw; color: #8fb2d4; flex: 0 0 auto; text-overflow: clip; }
+  .tv-next .idfly { flex: 1 0 9vw; container-type: size; min-width: 0; align-self: stretch; display: flex; align-items: center; justify-content: center; }
+  .tv-next .idalt { width: 100%; height: 100%; display: block; overflow: visible; }
+  .tv-next .idalt text { fill: #cfe6ff; font-weight: 700; font-family: inherit; }
+  .tv-next .idalt .ia-big { fill: #fff; font-size: 20px; font-weight: 800; }
+  .tv-next .idalt .ia-st { font-size: 13px; }
+  .tv-next .idalt .ia-stn { fill: #fff; font-size: 17px; font-weight: 800; }
+  .tv-next .idalt .ia-path { fill: none; stroke: rgba(143,208,255,.5); stroke-width: 1.6; stroke-dasharray: 3 5; }
   .tv-next .idb { display: flex; flex-direction: column; justify-content: center; flex: 0 1 auto; min-width: 0; overflow: hidden; padding: .2vh .7vw; border-radius: .8vw; background: rgba(0,0,0,.28); white-space: nowrap; }
-  .tv-next .idb b { overflow: hidden; text-overflow: ellipsis; font-size: 1.7vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tv-next .idb b { overflow: hidden; text-overflow: ellipsis; font-size: 1.55vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .tv-next:has(.idfly) { gap: .9vw; }
-  .tv-next .idb em { overflow: hidden; text-overflow: ellipsis; font-style: normal; font-size: .85vw; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8fd0ff; }
+  .tv-next .idb em { overflow: hidden; text-overflow: ellipsis; font-style: normal; font-size: .8vw; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #8fd0ff; }
   .tv-sec { display: flex; align-items: center; gap: .9vw; margin: .5vh 0 .6vh; font-size: 1.5vw; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
   .tv-sec svg { width: 3.2vw; height: 2.6vw; fill: #fff; filter: drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
   .tv-sec.out svg { transform: rotate(-14deg); } .tv-sec.inb svg { transform: scaleX(-1) rotate(-14deg); }
@@ -1617,8 +1616,30 @@ function idleBits() {
   const ds = opDayStart(), cl = jobs.filter(j => j.done && j.clearedAtISO && new Date(j.clearedAtISO).getTime() >= ds && j.clearedBy !== 'Stood down').sort((a, b) => new Date(b.clearedAtISO) - new Date(a.clearedAtISO));
   const last = cl[0], ago = last ? Math.max(0, Math.round((Date.now() - new Date(last.clearedAtISO).getTime()) / 60000)) : null;
   const when = ago == null ? '' : ago < 1 ? 'just now' : ago < 60 ? ago + 'm ago' : Math.floor(ago / 60) + 'h ' + String(ago % 60).padStart(2, '0') + 'm ago';
-  return '<span class="idfly"><span class="idr"><b class="b1"></b><b class="b2"></b><b class="b3"></b></span></span>' + `<span class="idb"><b>${cl.length}</b><em>cleared today</em></span>` + (last ? `<span class="idb"><b>${esc((last.route || '').replace('-', ' \u2192 '))}</b><em>last cleared ${when}</em></span>` : '<span class="idb"><b>&mdash;</b><em>nothing cleared yet</em></span>');
+  return '<span class="idfly"><svg class="idalt" viewBox="0 0 300 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="ia-path" d="M26,78 C66,78 80,30 112,30 L188,30 C220,30 234,78 274,78"/><line x1="6" x2="294" y1="80" y2="80" stroke="rgba(207,230,255,.3)"/><circle cx="26" cy="78" r="5" fill="#ffc04d"/><circle cx="274" cy="78" r="5" fill="#5be3a0"/><text class="ia-stn" x="26" y="97" text-anchor="middle">ATL</text><text class="ia-stn ia-dst" x="274" y="97" text-anchor="middle">LAX</text><text class="ia-big ia-alt" x="150" y="17" text-anchor="middle">0 ft</text><text class="ia-st" x="150" y="58" text-anchor="middle">Taking off</text><polygon class="ia-pl" points="14,0 4,-2 -2,-12 -5,-12 -2,-2 -9,-2 -11,-6 -13,-6 -11,0 -13,6 -11,6 -9,2 -2,2 -5,12 -2,12 4,2" fill="#fff" stroke="#8fd0ff" stroke-width="1" transform="translate(26,75)"/></svg></span>' + `<span class="idb"><b>${cl.length}</b><em>cleared today</em></span>` + (last ? `<span class="idb"><b>${esc((last.route || '').replace('-', ' \u2192 '))}</b><em>last cleared ${when}</em></span>` : '<span class="idb"><b>&mdash;</b><em>nothing cleared yet</em></span>');
 }
+
+// altitude climb in the Next Up box: slow trip, new station every trip (clock-driven so a re-render never restarts it)
+const ID_STN = ['LAX', 'ORD', 'SEA', 'BOS', 'DFW', 'MSP', 'DTW', 'JFK', 'SLC', 'DEN', 'LGA', 'MCO', 'PHX', 'SFO'];
+const ID_TRIP = 150000;
+let idAltLast = 0;
+function idAltTick(ts) {
+  requestAnimationFrame(idAltTick);
+  if (ts - idAltLast < 80) return; idAltLast = ts;
+  const s = document.querySelector('.idalt'); if (!s) return;
+  const p = s._p || (s._p = s.querySelector('.ia-path')), L = s._L || (s._L = p.getTotalLength());
+  const now = Date.now(), c = Math.floor(now / ID_TRIP), k = (now % ID_TRIP) / ID_TRIP;
+  if (s._c !== c) { s._c = c; s.querySelector('.ia-dst').textContent = ID_STN[c % ID_STN.length]; }
+  const m = Math.min(1, k / .92), pt = p.getPointAtLength(m * L), pt2 = p.getPointAtLength(Math.min(L, m * L + 1));
+  const ang = Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180 / Math.PI;
+  const h = Math.max(0, Math.min(1, (78 - pt.y) / 48));
+  const ft = Math.round(h * 340) * 100, kt = Math.round((140 + Math.pow(h, .75) * 340) / 5) * 5;
+  const pl = s.querySelector('.ia-pl'); pl.setAttribute('transform', `translate(${pt.x.toFixed(1)},${(pt.y - 3).toFixed(1)}) rotate(${ang.toFixed(1)}) scale(1.1)`); pl.style.opacity = k > .97 ? 0 : 1;
+  s.querySelector('.ia-alt').textContent = ft.toLocaleString('en-US') + ' ft';
+  const phase = k > .92 ? 'Landed' : m < .5 ? (h < .03 ? 'Taking off' : h < .97 ? 'Climbing' : 'Cruising') : (h > .97 ? 'Cruising' : 'Descending');
+  s.querySelector('.ia-st').textContent = phase + (k > .92 ? '' : ' \u00b7 ' + kt + ' kt');
+}
+requestAnimationFrame(idAltTick);
 function renderTV() {
   const root = document.getElementById('tv'); if (!root) return;
   const active = jobs.filter(j => !j.done);
