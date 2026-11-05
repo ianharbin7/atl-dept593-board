@@ -1580,7 +1580,8 @@ function idlePlace() {
   if (tt) {
     let b = tt.getBoundingClientRect().bottom;
     tt.querySelectorAll(':scope > *').forEach(e => { b = Math.max(b, e.getBoundingClientRect().bottom); });
-    if (b > 0) root.style.top = Math.round(b + window.innerHeight * .014) + 'px';
+    // the box always keeps the same shape: never let a half-drawn top bar push it down into a thin oval
+    if (b > 0) { const H = window.innerHeight; root.style.top = Math.round(Math.min(H * .30, Math.max(H * .2, b + H * .014))) + 'px'; }
   }
   if (!IDLE.placed) { IDLE.placed = true; if (document.fonts && document.fonts.ready) document.fonts.ready.then(idlePlace); setTimeout(idlePlace, 900); window.addEventListener('resize', idlePlace); }
   root.style.bottom = (/[?&]bare/.test(location.search) ? 1 : 5) + 'vh';
@@ -1606,7 +1607,7 @@ function idleShow(i) {
 function idleSet(on) {
   const root = document.getElementById('idle'); if (!root) return;
   if (on) {
-    idleBuild(); idlePlace(); idleData();
+    idleBuild(); idlePlace(); requestAnimationFrame(() => requestAnimationFrame(idlePlace)); idleData();
     if (!root.classList.contains('on')) { root.classList.add('on'); idleShow(Math.floor(Math.random() * 5)); idleNext(); }
   } else if (root.classList.contains('on')) { root.classList.remove('on'); clearTimeout(IDLE.timer); clearInterval(IDLE.flapTimer); }
 }
