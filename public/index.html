@@ -492,17 +492,18 @@
   .tv-next .in { font-size: 3.7vw; line-height: .95; font-weight: 800; color: #fff; background: rgba(0,0,0,.28); padding: .35vh 1.2vw .25vh; border-radius: .8vw; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tv-next .in.hot { background: #dc2626; }
   .tv-next .what.idle { font-size: 1.9vw; color: #8fb2d4; flex: 0 0 auto; text-overflow: clip; }
-  .tv-next .idfly { flex: 1 1 0; min-width: 0; align-self: stretch; display: flex; align-items: center; justify-content: center; }
-  .tv-next .idr { position: relative; height: 86%; aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: radial-gradient(circle, transparent 0 22%, rgba(143,208,255,.30) 22.6% 24%, transparent 24.6% 48%, rgba(143,208,255,.26) 48.6% 50%, transparent 50.6% 73%, rgba(143,208,255,.24) 73.6% 75%, transparent 75.6%), linear-gradient(rgba(143,208,255,.18), rgba(143,208,255,.18)) center / 1px 100% no-repeat, linear-gradient(rgba(143,208,255,.18), rgba(143,208,255,.18)) center / 100% 1px no-repeat, rgba(2,14,30,.55); box-shadow: 0 0 0 .15vw rgba(143,208,255,.35), inset 0 0 1.2vw rgba(0,0,0,.5); }
+  .tv-next .idfly { flex: 1 0 7vh; container-type: size; min-width: 0; align-self: stretch; display: flex; align-items: center; justify-content: center; }
+  .tv-next .idr { position: relative; flex: none; width: min(86cqh, 100cqw); height: min(86cqh, 100cqw); border-radius: 50%; overflow: hidden; background: radial-gradient(circle, transparent 0 22%, rgba(143,208,255,.30) 22.6% 24%, transparent 24.6% 48%, rgba(143,208,255,.26) 48.6% 50%, transparent 50.6% 73%, rgba(143,208,255,.24) 73.6% 75%, transparent 75.6%), linear-gradient(rgba(143,208,255,.18), rgba(143,208,255,.18)) center / 1px 100% no-repeat, linear-gradient(rgba(143,208,255,.18), rgba(143,208,255,.18)) center / 100% 1px no-repeat, rgba(2,14,30,.55); box-shadow: 0 0 0 .15vw rgba(143,208,255,.35), inset 0 0 1.2vw rgba(0,0,0,.5); }
   .tv-next .idr::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(120,225,255,0) 0deg, rgba(120,225,255,0) 250deg, rgba(120,225,255,.5) 360deg); animation: idsweep 9s linear infinite; }
   .tv-next .idr b { position: absolute; width: .32vw; height: .32vw; border-radius: 50%; background: #bfeaff; box-shadow: 0 0 .5vw #7fd8ff; opacity: 0; animation: idblip 9s linear infinite; }
   .tv-next .idr .b1 { left: 62%; top: 26%; animation-delay: .6s; } .tv-next .idr .b2 { left: 30%; top: 60%; animation-delay: 6.1s; } .tv-next .idr .b3 { left: 70%; top: 66%; animation-delay: 3.2s; }
   @keyframes idsweep { to { transform: rotate(360deg); } }
   @keyframes idblip { 0% { opacity: 1; } 55% { opacity: 0; } 100% { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .tv-next .idr::before, .tv-next .idr b { animation: none; } }
-  .tv-next .idb { display: flex; flex-direction: column; justify-content: center; padding: .2vh .9vw; border-radius: .8vw; background: rgba(0,0,0,.28); white-space: nowrap; }
-  .tv-next .idb b { font-size: 1.7vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .tv-next .idb em { font-style: normal; font-size: .85vw; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8fd0ff; }
+  .tv-next .idb { display: flex; flex-direction: column; justify-content: center; flex: 0 1 auto; min-width: 0; overflow: hidden; padding: .2vh .7vw; border-radius: .8vw; background: rgba(0,0,0,.28); white-space: nowrap; }
+  .tv-next .idb b { overflow: hidden; text-overflow: ellipsis; font-size: 1.7vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tv-next:has(.idfly) { gap: .9vw; }
+  .tv-next .idb em { overflow: hidden; text-overflow: ellipsis; font-style: normal; font-size: .85vw; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8fd0ff; }
   .tv-sec { display: flex; align-items: center; gap: .9vw; margin: .5vh 0 .6vh; font-size: 1.5vw; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
   .tv-sec svg { width: 3.2vw; height: 2.6vw; fill: #fff; filter: drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
   .tv-sec.out svg { transform: rotate(-14deg); } .tv-sec.inb svg { transform: scaleX(-1) rotate(-14deg); }
