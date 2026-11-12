@@ -508,9 +508,9 @@
   .tv-sec.out svg { transform: rotate(-14deg); } .tv-sec.inb svg { transform: scaleX(-1) rotate(-14deg); }
   .tv-sec small { font-size: 1.05vw; font-weight: 600; letter-spacing: .02em; text-transform: none; color: #8fb2d4; }
   .tv-sec em { margin-left: auto; font-style: normal; font-size: 1.1vw; color: #8fb2d4; }
-  .tv-cols, .tv-row { display: grid; grid-template-columns: 9.5% 14.5% 8.5% 11% 14.5% 5.5% 9% 12.5% 1fr; align-items: center; column-gap: .6vw; }
+  .tv-cols, .tv-row { display: grid; grid-template-columns: 9.5% 14.5% 8.5% 11% 14.5% 6.5% 13% 1fr; align-items: center; column-gap: .6vw; }
   .tv-cols { padding: 0 1.2vw 0 1.6vw; font-size: .9vw; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #6f94b8; height: 3.2vh; }
-  .tv-row { position: relative; height: 6.4vh; margin-bottom: .5vh; padding: 0 1.2vw .8vh 1.6vw; border-radius: .8vw; background: #0e2036; color: #e8f1fa; font-size: 1.75vw; font-weight: 600; overflow: hidden; }
+  .tv-row { position: relative; height: var(--rh, 6.4vh); margin-bottom: .5vh; padding: 0 1.2vw .8vh 1.6vw; border-radius: .8vw; background: #0e2036; color: #e8f1fa; font-size: 1.75vw; font-weight: 600; overflow: hidden; }
   .tv-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: .65vw; background: var(--c); }
   .tv-row.green { --c: #22c55e; } .tv-row.amber { --c: #f59e0b; background: #2a2210; } .tv-row.red { --c: #ef4444; background: #3a1216; } .tv-row.transit { --c: #38bdf8; background: #0c2a44; }
   .tv-row.red.late { animation: tvpulse 1.6s ease-in-out infinite; }
@@ -522,9 +522,9 @@
   .tv-row .time s { font-size: 1.2vw; color: #7f9bb8; margin-right: .5vw; font-weight: 600; }
   .tv-row .time .dly { display: inline-block; vertical-align: middle; margin-left: .5vw; padding: .1vh .6vw; font-size: .9vw; font-weight: 800; border-radius: .4vw; background: #f59e0b; color: #1c1300; letter-spacing: .04em; }
   .tv-row .time .dly.early { background: #22c55e; color: #04210d; }
-  .tv-row .gate, .tv-row .tail { color: #cfe3f7; }
+  .tv-row .gate { color: #cfe3f7; }
   .tv-row .awb { font-weight: 700; color: #fff; font-size: 1.5vw; }
-  .tv-row .cm { font-size: 1.15vw; font-weight: 500; color: #9fc0de; }
+  .tv-row > div.cm { font-size: 1.3vw; line-height: 1.15; font-weight: 600; color: #b8d4ec; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: clip; }
   .tv-row .badge { font-size: 1.6vw; padding: .5vh .5vw; border-radius: .6vw; white-space: nowrap; line-height: 1.15; }
   .tv-pill { display: inline-block; padding: .5vh 1vw; border-radius: 999px; font-size: 2.1vw; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
   .tv-pill.green { background: #15803d; } .tv-pill.amber { background: #d97706; } .tv-pill.red { background: #dc2626; } .tv-pill.transit { background: #0284c7; font-size: 1.4vw; }
@@ -1450,7 +1450,6 @@ function tvRow(j, lab) {
     <div class="time">${old}${esc(fmtTime(j.time))}${tag}</div>
     <div>${pill}</div>
     <div class="gate">${esc(j.gate) || '—'}</div>
-    <div class="tail">${esc(j.tail) || '—'}</div>
     <div class="awb">${esc(j.awb) || '—'}</div>
     <div class="cm">${esc(j.comments)}</div>
     ${trk}
@@ -1640,6 +1639,8 @@ function idAltTick(ts) {
   s.querySelector('.ia-st').textContent = phase + (k > .92 ? '' : ' \u00b7 ' + kt + ' kt');
 }
 requestAnimationFrame(idAltTick);
+let FILL = false;   // the wall page turns this on when the board has the whole left column, so the rows can spread out instead of leaving a gap at the bottom
+window.addEventListener('message', e => { const d = e.data; if (d && typeof d.ctbFill === 'boolean' && d.ctbFill !== FILL) { FILL = d.ctbFill; if (typeof renderTV === 'function' && TV) renderTV(); } });
 function renderTV() {
   const root = document.getElementById('tv'); if (!root) return;
   const active = jobs.filter(j => !j.done);
@@ -1691,16 +1692,26 @@ function renderTV() {
     if (BARE && !sec.list.length) return;   // on the wall, don't show an empty section
     const rows = pg[sec.k]; if (!rows.length && !rg(pg, sec.k)) return;
     html += `<div class="tv-sec ${sec.k}">${plane}${sec.label} <small>${sec.sub}</small><em>${sec.list.length} on board</em></div>`;
-    if (rows.length) html += `<div class="tv-cols"><div>Reason</div><div>Route</div><div>Flight</div><div>${sec.time}</div><div>Countdown</div><div>Gate</div><div>Tail</div><div>AWB</div><div>Comments</div></div>` + rows.map(j => tvRow(j, sec.time)).join('');
+    if (rows.length) html += `<div class="tv-cols"><div>Reason</div><div>Route</div><div>Flight</div><div>${sec.time}</div><div>Countdown</div><div>Gate</div><div>AWB</div><div>Comments</div></div>` + rows.map(j => tvRow(j, sec.time)).join('');
     else html += `<div class="tv-empty">${sec.none}</div>`;
   });
   const p = etParts(new Date());
   if (!BARE) html += `<div class="tv-foot"><span>UPDATED ${String(p.h).padStart(2,'0')}:${String(p.mi).padStart(2,'0')} ET</span><span class="dots">${tvPages > 1 ? 'PAGE ' + (tvPage + 1) + ' OF ' + tvPages : ''}${tvPages > 1 ? pages.map((_, i) => `<span class="${i === tvPage ? 'on' : ''}"></span>`).join('') : ''}</span></div>`;
   root.innerHTML = html;
+  root.style.removeProperty('--rh');
+  const kids = [...root.children].filter(e => !e.classList.contains('tv-foot')), last = kids[kids.length - 1];
+  const needPx = last ? Math.ceil(last.getBoundingClientRect().bottom) : 0;   // room the rows need at their normal height (measured before any stretching)
+  if (BARE && FILL && last) {
+    const rws = root.querySelectorAll('.tv-row');
+    if (rws.length) {
+      const free = window.innerHeight * 0.985 - last.getBoundingClientRect().bottom;
+      const add = Math.min(free / rws.length, window.innerHeight * 0.04);
+      if (add > 2) root.style.setProperty('--rh', (rws[0].getBoundingClientRect().height + add) + 'px');
+    }
+  }
   fxApply(root, vis.map(j => String(j.id))); fxCount(root); fxFlip(root);
   try {   // tell the wall page how much room this board needs, so it can use the rest for metrics
-    const kids = [...root.children].filter(e => !e.classList.contains('tv-foot')), last = kids[kids.length - 1];
-    parent.postMessage({ ctb: 1, n: vis.length, need: last ? Math.ceil(last.getBoundingClientRect().bottom) : 0, H: window.innerHeight, W: window.innerWidth, pages: tvPages }, '*');
+    parent.postMessage({ ctb: 1, n: vis.length, need: needPx, H: window.innerHeight, W: window.innerWidth, pages: tvPages }, '*');
   } catch (e) {}
 }
 function rg(pg, k) { return pg[k].empty; }
