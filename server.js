@@ -72,6 +72,7 @@ function shiftFor(p) {
 const DATA_DIR     = process.env.DATA_DIR || '/tmp';
 const DATA_FILE    = path.join(DATA_DIR, 'atl_jobs.json');
 const HELD_FILE    = path.join(DATA_DIR, 'atl_held.json');
+const DUE_FILE     = path.join(DATA_DIR, 'atl_due.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'atl_history.json');
 const REASONS_FILE = path.join(DATA_DIR, 'atl_reasons.json');
 
@@ -157,6 +158,18 @@ function holdTimes(holdDate, time) {
   const showMs = hasTime ? dueMs - HOLD_LEAD_HOURS * 3600 * 1000 : etWallToEpoch(+mm[1], +mm[2], +mm[3], 6, 0);
   return { dueISO: new Date(dueMs).toISOString(), showAtISO: new Date(showMs).toISOString(), hasTime };
 }
+// A short record of every later-date shipment, kept after it moves onto the board, so the turnover sheet's
+// "DUE TODAY" note can list it on the day it is due. Removed if the shipment is removed from Upcoming.
+let dueLog = loadJSON(DUE_FILE, []).filter(d => d && d.id && d.dueISO);
+function dueRec(h) { return { id: h.id, type: h.type, route: h.route, flt: h.flt, time: h.time, awb: h.awb, comments: h.comments, holdDate: h.holdDate, dueISO: h.dueISO }; }
+function ensureDue(h) { if (!dueLog.some(d => d.id === h.id)) dueLog.push(dueRec(h)); }
+// the operating day runs 6:00 AM to 6:00 AM Eastern (same as the turnover sheet), so 2:00 AM belongs to the day before
+function opDate(iso) {
+  const p = etParts(new Date(iso));
+  const q = p.h < 6 ? prevDay(p.y, p.mo, p.d) : { y: p.y, mo: p.mo, d: p.d };
+  return isoDate(q.y, q.mo, q.d);
+}
+held.forEach(ensureDue);
 function normalizeHeld(raw) {
   const j = normalizeJob(raw);
   if (!j) return null;
@@ -194,7 +207,7 @@ function sweep() {
   return jobs.length !== before;
 }
 
-function persist() { saveJSON(DATA_FILE, jobs); saveJSON(HISTORY_FILE, history); saveJSON(HELD_FILE, held); }
+function persist() { saveJSON(DATA_FILE, jobs); saveJSON(HISTORY_FILE, history); saveJSON(HELD_FILE, held); saveJSON(DUE_FILE, dueLog); }
 
 if (ensureHistory() | sweep()) persist();
 console.log(`Loaded ${jobs.length} jobs, ${history.length} history entries (booted empty: ${bootedEmpty})`);
@@ -264,7 +277,11 @@ setInterval(() => promoteHeld(false), 30 * 1000).unref();
 promoteHeld(false);
 
 // Hourly housekeeping
-setInterval(() => { if (sweep()) { persist(); broadcastJobs(); } }, 3600 * 1000).unref();
+setInterval(() => {
+  const keep = Date.now() - 3 * 86400000, n = dueLog.length;
+  dueLog = dueLog.filter(d => Date.parse(d.dueISO) >= keep);
+  if (sweep() || dueLog.length !== n) { persist(); broadcastJobs(); }
+}, 3600 * 1000).unref();
 
 app.get('/ping', (req, res) => res.send('ok'));
 
@@ -363,6 +380,7 @@ app.post('/api/jobs', (req, res) => {
       job.time = timeNorm(job.time);
       Object.assign(job, { holdDate, dueISO: ht.dueISO, showAtISO: ht.showAtISO });
       held.push(job);
+      ensureDue(job);
       persist();
       broadcastHeld();
       return res.json(Object.assign({}, job, { held: true }));
@@ -385,12 +403,27 @@ app.post('/api/held/:id/release', (req, res) => {
 });
 app.delete('/api/held/:id', (req, res) => {
   const n = held.length;
+  dueLog = dueLog.filter(x => x.id !== Number(req.params.id));
   held = held.filter(x => x.id !== Number(req.params.id));
   if (held.length === n) return res.status(404).json({ error: 'not found' });
   persist(); broadcastHeld();
   res.json({ ok: true });
 });
 app.get('/api/held', (req, res) => res.json(held));
+
+// What is due on one operating day (YYYY-MM-DD): one ready-to-write line each, for the turnover sheet's Notes.
+app.get('/api/due', (req, res) => {
+  const date = String(req.query.date || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: 'date should look like 2026-11-14' });
+  const items = dueLog.filter(d => opDate(d.dueISO) === date).sort((a, b) => Date.parse(a.dueISO) - Date.parse(b.dueISO)).map(d => {
+    const tm = timeNorm(d.time), hasT = /^\d{4}$/.test(tm);
+    const cm = String(d.comments || '').replace(/\s*\|\s*NOTE:\s*/i, '  |  NOTE: ');
+    const line = 'DUE TODAY ' + (hasT ? tm.slice(0, 2) + ':' + tm.slice(2) : '(no time)') + ':  ' + d.route +
+      (d.flt ? '  FLT ' + d.flt : '') + (d.awb ? '  AWB ' + d.awb : '') + (d.type ? '  |  ' + d.type : '') + (cm ? '  |  ' + cm : '');
+    return { id: d.id, line: line.slice(0, 400) };
+  });
+  res.json(items);
+});
 
 app.put('/api/jobs/:id', (req, res) => {
   const j = jobs.find(x => x.id === Number(req.params.id));
@@ -491,7 +524,7 @@ app.post('/api/restore', (req, res) => {
   const haveHeld = new Set(held.map(h => h.id).concat(jobs.map(j => j.id)));
   (Array.isArray(b.held) ? b.held : []).forEach(raw => {
     const h = normalizeHeld(raw);
-    if (h && !haveHeld.has(h.id)) { held.push(h); haveHeld.add(h.id); lastId = Math.max(lastId, h.id); }
+    if (h && !haveHeld.has(h.id)) { held.push(h); ensureDue(h); haveHeld.add(h.id); lastId = Math.max(lastId, h.id); }
   });
   const haveHist = new Set(history.map(h => h.jobId));
   (Array.isArray(b.history) ? b.history : []).forEach(h => {
