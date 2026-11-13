@@ -964,17 +964,17 @@ function etWallToEpoch(y, mo, d, h, mi) {
 }
 
 // Shift windows: 1st Mon-Thu 6:00a-2:00p · 2nd Mon-Thu 2:00p-10:00p · 3rd Mon-Thu 10:00p-6:00a
-// Weekend 1st Fri-Sun 6:30a-6:30p · Weekend 3rd Fri-Sun 6:30p-6:30a. Monday 6:00a belongs to Monday's 1st shift.
+// Weekend 1st Fri-Sun 6:00a-6:00p · Weekend 3rd Fri-Sun 6:00p-6:00a. Monday 6:00a belongs to Monday's 1st shift.
 function shiftKeyNow() {
   const p = etParts(new Date()), m = p.h*60 + p.mi, dow = p.dow;
   if (dow === 1) return m < 360 ? 'WE 3rd' : m < 840 ? '1st' : m < 1320 ? '2nd' : '3rd';
   if (dow >= 2 && dow <= 4) return m < 360 ? '3rd' : m < 840 ? '1st' : m < 1320 ? '2nd' : '3rd';
-  if (dow === 5) return m < 360 ? '3rd' : m < 1110 ? 'WE 1st' : 'WE 3rd';
-  return m < 390 ? 'WE 3rd' : m < 1110 ? 'WE 1st' : 'WE 3rd';
+  if (dow === 5) return m < 360 ? '3rd' : m < 1080 ? 'WE 1st' : 'WE 3rd';
+  return m < 360 ? 'WE 3rd' : m < 1080 ? 'WE 1st' : 'WE 3rd';
 }
 const SHIFT_LABELS = {
   '1st':'Weekday 1st Shift (6:00a–2:00p)', '2nd':'Weekday 2nd Shift (2:00p–10:00p)', '3rd':'Weekday 3rd Shift (10:00p–6:00a)',
-  'WE 1st':'Weekend 1st Shift (6:30a–6:30p)', 'WE 3rd':'Weekend 3rd Shift (6:30p–6:30a)'
+  'WE 1st':'Weekend 1st Shift (6:00a–6:00p)', 'WE 3rd':'Weekend 3rd Shift (6:00p–6:00a)'
 };
 
 // The moment a flight time refers to. It is the first time that clock reading occurs at or after the

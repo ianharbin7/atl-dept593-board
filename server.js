@@ -51,16 +51,16 @@ function prevDay(y, mo, d) {
 
 // Shift windows (Eastern):
 //   1st      Mon-Thu 6:00a-2:00p      2nd  Mon-Thu 2:00p-10:00p     3rd  Mon-Thu 10:00p-6:00a (next morning)
-//   WE 1st   Fri-Sun 6:30a-6:30p      WE 3rd  Fri-Sun 6:30p-6:30a (next morning)
-// Changeovers: Monday 6:00a belongs to Monday's 1st shift; Friday 6:00-6:30a (nobody scheduled) goes to WE 1st.
+//   WE 1st   Fri-Sun 6:00a-6:00p      WE 3rd  Fri-Sun 6:00p-6:00a (next morning)   (weekend times changed from 6:30 on 11/05/26)
+// Changeovers: Monday 6:00a belongs to Monday's 1st shift.
 // shiftDate is the day the shift STARTED, so an overnight shift stays on one date.
 function shiftFor(p) {
   const m = p.h * 60 + p.mi, dow = p.dow;
   let shift;
   if (dow === 1)               shift = m < 360 ? 'WE 3rd' : m < 840 ? '1st' : m < 1320 ? '2nd' : '3rd';
   else if (dow >= 2 && dow <= 4) shift = m < 360 ? '3rd'    : m < 840 ? '1st' : m < 1320 ? '2nd' : '3rd';
-  else if (dow === 5)          shift = m < 360 ? '3rd'    : m < 1110 ? 'WE 1st' : 'WE 3rd';
-  else                         shift = m < 390 ? 'WE 3rd' : m < 1110 ? 'WE 1st' : 'WE 3rd';
+  else if (dow === 5)          shift = m < 360 ? '3rd'    : m < 1080 ? 'WE 1st' : 'WE 3rd';
+  else                         shift = m < 360 ? 'WE 3rd' : m < 1080 ? 'WE 1st' : 'WE 3rd';
   const overnight = (shift === '3rd' || shift === 'WE 3rd') && m < 720;
   const sd = overnight ? prevDay(p.y, p.mo, p.d) : { y: p.y, mo: p.mo, d: p.d };
   return { shift, shiftDate: isoDate(sd.y, sd.mo, sd.d) };
@@ -92,7 +92,7 @@ function saveJSON(file, data) {
 }
 
 // ── Job helpers ───────────────────────────────────────────────────────────────
-const SHIFT_START = { '1st': [6, 0], '2nd': [14, 0], '3rd': [22, 0], 'WE 1st': [6, 30], 'WE 3rd': [18, 30] };
+const SHIFT_START = { '1st': [6, 0], '2nd': [14, 0], '3rd': [22, 0], 'WE 1st': [6, 0], 'WE 3rd': [18, 0] };
 
 function legacyShiftDate(date) {
   const mm = /^(\d{1,2})\/(\d{1,2})$/.exec(date || '');
