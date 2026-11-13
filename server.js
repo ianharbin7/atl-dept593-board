@@ -296,6 +296,50 @@ setInterval(() => {
   if (sweep() || dueLog.length !== n) { persist(); broadcastJobs(); }
 }, 3600 * 1000).unref();
 
+// ── Dangerous goods (DG) ─────────────────────────────────────────────────────
+// feed:   today's DG tool list from Tool Recovery (TAB lines: toolId, mpn, description, DG note, battery info). Replaced whole each day.
+// parked: DG shipments taken to the DG group and waiting for their booking; every shift's workbook lists them until someone finishes them.
+const DGFEED_FILE = path.join(DATA_DIR, 'atl_dgfeed.tsv'), DGPARK_FILE = path.join(DATA_DIR, 'atl_dgpark.json');
+let dgFeed = ''; try { dgFeed = fs.readFileSync(DGFEED_FILE, 'utf8'); } catch (e) {}
+let dgPark = loadJSON(DGPARK_FILE, []).filter(p => p && p.id != null);
+const dgSave = () => saveJSON(DGPARK_FILE, dgPark);
+app.post('/api/dg/feed', express.text({ limit: '40mb', type: '*/*' }), (req, res) => {
+  const t = typeof req.body === 'string' ? req.body : '';
+  if (!t.trim()) return res.status(400).json({ error: 'empty feed' });
+  dgFeed = t;
+  try { fs.writeFileSync(DGFEED_FILE, dgFeed); } catch (e) { console.error('dg feed save', e.message); }
+  res.json({ ok: true, lines: dgFeed.split('\n').filter(Boolean).length });
+});
+app.get('/api/dg/feed', (req, res) => { res.type('text/plain; charset=utf-8').send(dgFeed); });
+
+app.post('/api/dg/park', (req, res) => {
+  const b = req.body || {};
+  if (!clean(b.route)) return res.status(400).json({ error: 'route is required' });
+  const id = dgPark.reduce((m, p) => Math.max(m, Number(p.id) || 0), 0) + 1;
+  const p = { id, createdISO: new Date().toISOString(), route: clean(b.route).toUpperCase(), reason: clean(b.reason), tools: String(b.tools == null ? '' : b.tools).slice(0, 500),
+    by: clean(b.by), shift: clean(b.shift), note: clean(b.note), form: String(b.form == null ? '' : b.form).slice(0, 8000) };
+  dgPark.push(p); dgSave();
+  res.json({ ok: true, id });
+});
+// TAB lines:  id, parked-at (ET), note line, form
+app.get('/api/dg/parked', (req, res) => {
+  const cf = v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ');
+  const out = dgPark.map(p => {
+    const pt = etParts(new Date(p.createdISO));
+    const hh = ((pt.h + 11) % 12) + 1, ap = pt.h >= 12 ? 'p' : 'a';
+    const line = 'AT DG - AWAITING BOOKING:  ' + p.route.replace('-', ' to ') + (p.reason ? '  ' + p.reason : '') + '  |  ' + p.tools +
+      '  |  to DG ' + pt.mo + '/' + pt.d + ' ' + hh + ':' + pad(pt.mi) + ap + (p.by ? ' by ' + p.by : '') + (p.note ? '  |  NOTE: ' + p.note : '');
+    return [p.id, etStamp(Date.parse(p.createdISO)), line, p.form].map(cf).join('\t');
+  });
+  res.type('text/plain; charset=utf-8').send(out.join('\n'));
+});
+app.delete('/api/dg/park/:id', (req, res) => {
+  const n = dgPark.length; dgPark = dgPark.filter(p => String(p.id) !== String(req.params.id));
+  if (dgPark.length === n) return res.status(404).json({ error: 'not found' });
+  dgSave(); res.json({ ok: true });
+});
+setInterval(() => { const keep = Date.now() - 7 * 86400000, n = dgPark.length; dgPark = dgPark.filter(p => Date.parse(p.createdISO) >= keep); if (dgPark.length !== n) dgSave(); }, 3600 * 1000).unref();
+
 app.get('/ping', (req, res) => res.send('ok'));
 
 // ── CT Hub numbers (/api/dashboard) ───────────────────────────────────────────
