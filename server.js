@@ -160,9 +160,22 @@ function holdTimes(holdDate, time) {
 }
 // A short record of every later-date shipment, kept after it moves onto the board, so the turnover sheet's
 // "DUE TODAY" note can list it on the day it is due. Removed if the shipment is removed from Upcoming.
-let dueLog = loadJSON(DUE_FILE, []).filter(d => d && d.id && d.dueISO);
-function dueRec(h) { return { id: h.id, type: h.type, route: h.route, flt: h.flt, time: h.time, awb: h.awb, comments: h.comments, holdDate: h.holdDate, dueISO: h.dueISO }; }
-function ensureDue(h) { if (!dueLog.some(d => d.id === h.id)) dueLog.push(dueRec(h)); }
+let dueLog = loadJSON(DUE_FILE, []).filter(d => d && d.dueISO);
+// One record per later-date shipment (matched by key). It can come from the board push, from the turnover sheet's own
+// "save this hold" call, or both - they are merged. `form` is the sheet's saved form (used to fill the turnover rows).
+function upsertDue(h) {
+  const cut = (v, n) => (v == null ? '' : String(v).slice(0, n));
+  const key = cut(h.key, 300);
+  let d = dueLog.find(x => (key && x.key === key) || (h.id && x.id === h.id));
+  if (!d) { d = { id: 0, key: '' }; dueLog.push(d); }
+  if (h.id) d.id = h.id;
+  if (key) d.key = key;
+  ['type', 'route', 'flt', 'time', 'awb', 'comments', 'holdDate', 'dueISO'].forEach(k => { if (h[k] != null && h[k] !== '') d[k] = cut(h[k], 500); });
+  if (h.form) d.form = cut(h.form, 6000);
+  if (h.section) d.section = cut(h.section, 8);
+  return d;
+}
+function ensureDue(h) { upsertDue(h); }
 // the operating day runs 6:00 AM to 6:00 AM Eastern (same as the turnover sheet), so 2:00 AM belongs to the day before
 function opDate(iso) {
   const p = etParts(new Date(iso));
@@ -403,13 +416,50 @@ app.post('/api/held/:id/release', (req, res) => {
 });
 app.delete('/api/held/:id', (req, res) => {
   const n = held.length;
-  dueLog = dueLog.filter(x => x.id !== Number(req.params.id));
+  const hh = held.find(x => x.id === Number(req.params.id));
+  dueLog = dueLog.filter(x => x.id !== Number(req.params.id) && !(hh && hh.key && x.key === hh.key));
   held = held.filter(x => x.id !== Number(req.params.id));
   if (held.length === n) return res.status(404).json({ error: 'not found' });
   persist(); broadcastHeld();
   res.json({ ok: true });
 });
 app.get('/api/held', (req, res) => res.json(held));
+
+// The turnover sheet saves every later-date shipment here (even when it is NOT going on the Live Board),
+// so every shift's workbook can list it, and the shift it arrives on can fill it in as a real row.
+app.post('/api/holds/record', (req, res) => {
+  const b = req.body || {};
+  const holdDate = clean(b.holdDate), time = timeNorm(b.time);
+  const ht = holdTimes(holdDate, time);
+  if (!ht) return res.status(400).json({ error: 'holdDate should look like 2026-11-14' });
+  if (!clean(b.key) || !clean(b.route)) return res.status(400).json({ error: 'key and route are required' });
+  const d = upsertDue({ key: clean(b.key), type: clean(b.type), route: clean(b.route).toUpperCase(), flt: clean(b.flt), time, awb: clean(b.awb),
+    comments: clean(b.comments), holdDate, dueISO: ht.dueISO, form: String(b.form == null ? '' : b.form).slice(0, 6000), section: clean(b.section) });
+  persist();
+  res.json({ ok: true, id: d.id });
+});
+
+// Plain-text list for the turnover workbook: everything pending from one operating day on.
+// One line per shipment, fields separated by TAB:  placeET, opDate, note line, section, form
+const etStamp = ms => { const p = etParts(new Date(ms)); return isoDate(p.y, p.mo, p.d) + ' ' + pad(p.h) + ':' + pad(p.mi); };
+app.get('/api/pending', (req, res) => {
+  const from = String(req.query.from || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) return res.status(400).send('from should look like 2026-11-14');
+  const cleanF = v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ');
+  const rows = dueLog.map(d => {
+    const tm = timeNorm(d.time), hasT = /^\d{4}$/.test(tm);
+    const od = opDate(d.dueISO);
+    const mm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.holdDate || '');
+    const placeMs = hasT ? Date.parse(d.dueISO) : (mm ? etWallToEpoch(+mm[1], +mm[2], +mm[3], 6, 0) : Date.parse(d.dueISO));
+    const cm = String(d.comments || '').replace(/\s*\|\s*NOTE:\s*/i, '  |  NOTE: ');
+    const when = hasT ? tm.slice(0, 2) + ':' + tm.slice(2) : '(no time)';
+    const hd = d.holdDate || od, mo = hd.slice(5, 7).replace(/^0/, ''), dy = hd.slice(8, 10).replace(/^0/, '');   // the real calendar date it is due
+    const pre = od === from ? 'DUE TODAY ' + when : 'UPCOMING ' + mo + '/' + dy + ' ' + when;
+    const line = pre + ':  ' + d.route + (d.flt ? '  FLT ' + d.flt : '') + (d.awb ? '  AWB ' + d.awb : '') + (d.type ? '  |  ' + d.type : '') + (cm ? '  |  ' + cm : '');
+    return { placeMs, od, line: line.slice(0, 400), section: d.section || '', form: d.form || '' };
+  }).filter(r => r.od >= from).sort((a, b) => a.placeMs - b.placeMs);
+  res.type('text/plain').send(rows.map(r => [etStamp(r.placeMs), r.od, cleanF(r.line), r.section, cleanF(r.form)].join('\t')).join('\n'));
+});
 
 // What is due on one operating day (YYYY-MM-DD): one ready-to-write line each, for the turnover sheet's Notes.
 app.get('/api/due', (req, res) => {
