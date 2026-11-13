@@ -71,6 +71,7 @@ function shiftFor(p) {
 // wiped on every deploy/restart. The page itself keeps a copy and hands it back (see /api/restore).
 const DATA_DIR     = process.env.DATA_DIR || '/tmp';
 const DATA_FILE    = path.join(DATA_DIR, 'atl_jobs.json');
+const HELD_FILE    = path.join(DATA_DIR, 'atl_held.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'atl_history.json');
 const REASONS_FILE = path.join(DATA_DIR, 'atl_reasons.json');
 
@@ -139,9 +140,34 @@ function historyEntry(j) {
 const bootedEmpty = !fs.existsSync(DATA_FILE) && !fs.existsSync(HISTORY_FILE);
 let jobs    = loadJSON(DATA_FILE, []).map(normalizeJob).filter(Boolean);
 let history = loadJSON(HISTORY_FILE, []);
+
+// ── Held (later-date) shipments ──────────────────────────────────────────────
+// A shipment typed for a later day waits here, off the board. It moves onto the board by itself
+// HOLD_LEAD_HOURS before it is due (or at 6:00 AM Eastern on its day when no time was given).
+// It is kept apart from `jobs` on purpose, so nothing that reads the board's list can count it early.
+const HOLD_LEAD_HOURS = 6;
+let held = loadJSON(HELD_FILE, []).map(normalizeHeld).filter(Boolean);
+function holdTimes(holdDate, time) {
+  const mm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(holdDate || '');
+  if (!mm) return null;
+  const t = timeNorm(time), hasTime = /^\d{4}$/.test(t);
+  const h = hasTime ? +t.slice(0, 2) : 12, mi = hasTime ? +t.slice(2) : 0;
+  if (h > 23 || mi > 59) return null;
+  const dueMs = etWallToEpoch(+mm[1], +mm[2], +mm[3], h, mi);
+  const showMs = hasTime ? dueMs - HOLD_LEAD_HOURS * 3600 * 1000 : etWallToEpoch(+mm[1], +mm[2], +mm[3], 6, 0);
+  return { dueISO: new Date(dueMs).toISOString(), showAtISO: new Date(showMs).toISOString(), hasTime };
+}
+function normalizeHeld(raw) {
+  const j = normalizeJob(raw);
+  if (!j) return null;
+  const sc = v => (v == null ? '' : String(v).slice(0, 40));
+  j.holdDate = sc(raw.holdDate); j.dueISO = sc(raw.dueISO); j.showAtISO = sc(raw.showAtISO);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(j.holdDate) || !j.showAtISO) return null;
+  return j;
+}
 const DEFAULT_REASONS = ['AOS', 'RON', 'LOAN', 'LOG', 'AOS LOAN', 'STS', 'ATS', 'STL', 'RTS'];
 let reasons = loadJSON(REASONS_FILE, DEFAULT_REASONS.slice());
-let lastId  = jobs.reduce((m, j) => Math.max(m, j.id), 0);
+let lastId  = Math.max(jobs.reduce((m, j) => Math.max(m, j.id), 0), held.reduce((m, j) => Math.max(m, j.id), 0));
 
 // Ids are time-based so a new shipment can never collide with one restored from a backup.
 function nextId() { lastId = Math.max(lastId + 1, Date.now()); return lastId; }
@@ -168,7 +194,7 @@ function sweep() {
   return jobs.length !== before;
 }
 
-function persist() { saveJSON(DATA_FILE, jobs); saveJSON(HISTORY_FILE, history); }
+function persist() { saveJSON(DATA_FILE, jobs); saveJSON(HISTORY_FILE, history); saveJSON(HELD_FILE, held); }
 
 if (ensureHistory() | sweep()) persist();
 console.log(`Loaded ${jobs.length} jobs, ${history.length} history entries (booted empty: ${bootedEmpty})`);
@@ -188,13 +214,14 @@ function recentHistory() {
   return history.filter(h => h.shiftDate >= cut);
 }
 const broadcastJobs    = () => broadcast({ type: 'jobs', jobs });
+const broadcastHeld    = () => broadcast({ type: 'held', held });
 const broadcastHistory = () => broadcast({ type: 'history', history: recentHistory() });
 
 // ── WebSocket endpoint ────────────────────────────────────────────────────────
 app.ws('/live', (ws) => {
   clients.add(ws);
   ws.send(JSON.stringify({
-    type: 'init', jobs, reasons, history: recentHistory(),
+    type: 'init', jobs, held, reasons, history: recentHistory(),
     fresh: bootedEmpty, bootId: BOOT_ID, build: BUILD_ID
   }));
   ws.on('close', () => clients.delete(ws));
@@ -217,6 +244,24 @@ if (BASE_URL) {
     }).on('error', (e) => console.log('Ping error:', e.message));
   }, 10 * 60 * 1000); // every 10 minutes
 }
+
+// Move held shipments onto the board when their time comes (checked every 30 seconds).
+function promoteHeld(force) {
+  const now = Date.now(); let moved = 0;
+  held = held.filter(h => {
+    if (!force && Date.parse(h.showAtISO) > now) return true;
+    const d = new Date(), p = etParts(d), s = shiftFor(p);
+    const j = Object.assign({}, h);
+    delete j.holdDate; delete j.dueISO; delete j.showAtISO;
+    j.date = p.mo + '/' + p.d; j.shift = s.shift; j.shiftDate = s.shiftDate; j.addedAtISO = d.toISOString();
+    jobs.push(j); moved++;
+    return false;
+  });
+  if (moved) { persist(); broadcastJobs(); broadcastHeld(); }
+  return moved;
+}
+setInterval(() => promoteHeld(false), 30 * 1000).unref();
+promoteHeld(false);
 
 // Hourly housekeeping
 setInterval(() => { if (sweep()) { persist(); broadcastJobs(); } }, 3600 * 1000).unref();
@@ -307,11 +352,45 @@ app.post('/api/jobs', (req, res) => {
   };
   if (!job.type || !job.route) return res.status(400).json({ error: 'type and route are required' });
   if (fromSt(job.route) !== 'ATL' && toSt(job.route) !== 'ATL') return res.status(400).json({ error: 'one end of the route must be ATL' });
+  // A later-date shipment (holdDate = YYYY-MM-DD, Eastern) waits off the board until HOLD_LEAD_HOURS before it is due.
+  const holdDate = clean(b.holdDate);
+  if (holdDate) {
+    const ht = holdTimes(holdDate, job.time);
+    if (!ht) return res.status(400).json({ error: 'holdDate should look like 2026-11-14' });
+    if (Date.parse(ht.showAtISO) > Date.now()) {
+      const dupe = held.find(h => (key && h.key === key) || (h.route === job.route && h.holdDate === holdDate && awbTokens(h.awb).length && awbTokens(h.awb).some(t => awbTokens(job.awb).includes(t))));
+      if (dupe) return res.json(Object.assign({}, dupe, { duplicate: true, held: true }));
+      job.time = timeNorm(job.time);
+      Object.assign(job, { holdDate, dueISO: ht.dueISO, showAtISO: ht.showAtISO });
+      held.push(job);
+      persist();
+      broadcastHeld();
+      return res.json(Object.assign({}, job, { held: true }));
+    }
+    // already inside the lead window: fall through and put it on the board now
+  }
   jobs.push(job);
   persist();
   broadcastJobs();
   res.json(job);
 });
+
+// Held shipments: bring one onto the board now, or take it off the list.
+app.post('/api/held/:id/release', (req, res) => {
+  const h = held.find(x => x.id === Number(req.params.id));
+  if (!h) return res.status(404).json({ error: 'not found' });
+  h.showAtISO = new Date(0).toISOString();
+  promoteHeld(false);
+  res.json({ ok: true });
+});
+app.delete('/api/held/:id', (req, res) => {
+  const n = held.length;
+  held = held.filter(x => x.id !== Number(req.params.id));
+  if (held.length === n) return res.status(404).json({ error: 'not found' });
+  persist(); broadcastHeld();
+  res.json({ ok: true });
+});
+app.get('/api/held', (req, res) => res.json(held));
 
 app.put('/api/jobs/:id', (req, res) => {
   const j = jobs.find(x => x.id === Number(req.params.id));
@@ -409,6 +488,11 @@ app.post('/api/restore', (req, res) => {
     const j = normalizeJob(raw);
     if (j && !haveJob.has(j.id)) { jobs.push(j); haveJob.add(j.id); addedJobs++; lastId = Math.max(lastId, j.id); }
   });
+  const haveHeld = new Set(held.map(h => h.id).concat(jobs.map(j => j.id)));
+  (Array.isArray(b.held) ? b.held : []).forEach(raw => {
+    const h = normalizeHeld(raw);
+    if (h && !haveHeld.has(h.id)) { held.push(h); haveHeld.add(h.id); lastId = Math.max(lastId, h.id); }
+  });
   const haveHist = new Set(history.map(h => h.jobId));
   (Array.isArray(b.history) ? b.history : []).forEach(h => {
     if (h && h.jobId != null && h.shiftDate && !haveHist.has(h.jobId)) {
@@ -427,6 +511,7 @@ app.post('/api/restore', (req, res) => {
   sweep();
   persist();
   broadcastJobs();
+  broadcastHeld();
   broadcastHistory();
   console.log(`Restore: +${addedJobs} jobs, +${addedHistory} history`);
   res.json({ ok: true, addedJobs, jobs: jobs.length, history: history.length });
