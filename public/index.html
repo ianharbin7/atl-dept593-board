@@ -503,11 +503,11 @@
   .tv-next .idb b { overflow: hidden; text-overflow: ellipsis; font-size: 1.55vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .tv-next:has(.idfly) { gap: .9vw; }
   .tv-next .idb em { overflow: hidden; text-overflow: ellipsis; font-style: normal; font-size: .8vw; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #8fd0ff; }
-  .tv-sec { display: flex; align-items: center; gap: .9vw; margin: .5vh 0 .6vh; font-size: 1.5vw; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
-  .tv-sec svg { width: 3.2vw; height: 2.6vw; fill: #fff; filter: drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
+  .tv-sec { display: flex; align-items: center; gap: .9vw; margin: 1vh 0 .6vh; padding-bottom: .6vh; border-bottom: .22vh solid rgba(143,178,212,.45); font-size: 2.2vw; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
+  .tv-sec svg { width: 4.2vw; height: 3.3vw; fill: #fff; filter: drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
   .tv-sec.out svg { transform: rotate(-14deg); } .tv-sec.inb svg { transform: scaleX(-1) rotate(-14deg); }
-  .tv-sec small { font-size: 1.05vw; font-weight: 600; letter-spacing: .02em; text-transform: none; color: #8fb2d4; }
-  .tv-sec em { margin-left: auto; font-style: normal; font-size: 1.1vw; color: #8fb2d4; }
+  .tv-sec small { font-size: 1.45vw; font-weight: 600; letter-spacing: .02em; text-transform: none; color: #8fb2d4; }
+  .tv-sec em { margin-left: auto; font-style: normal; font-size: 1.6vw; font-weight: 800; color: #cfe3f7; }
   .tv-cols, .tv-row { display: grid; grid-template-columns: 9.5% 14.5% 8.5% 11% 14.5% 6.5% 13% 1fr; align-items: center; column-gap: .6vw; }
   .tv-cols { padding: 0 1.2vw 0 1.6vw; font-size: .9vw; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #6f94b8; height: 3.2vh; }
   .tv-row { position: relative; height: var(--rh, 6.4vh); margin-bottom: .5vh; padding: 0 1.2vw .8vh 1.6vw; border-radius: .8vw; background: #0e2036; color: #e8f1fa; font-size: 1.75vw; font-weight: 600; overflow: hidden; }
@@ -1640,7 +1640,7 @@ function idAltTick(ts) {
 }
 requestAnimationFrame(idAltTick);
 let FILL = false;   // the wall page turns this on when the board has the whole left column, so the rows can spread out instead of leaving a gap at the bottom
-window.addEventListener('message', e => { const d = e.data; if (d && typeof d.ctbFill === 'boolean' && d.ctbFill !== FILL) { FILL = d.ctbFill; if (typeof renderTV === 'function' && TV) renderTV(); } });
+window.addEventListener('message', e => { const d = e.data; if (d && d.ctbPing) { if (typeof renderTV === 'function' && TV) renderTV(); return; } if (d && typeof d.ctbFill === 'boolean' && d.ctbFill !== FILL) { FILL = d.ctbFill; if (typeof renderTV === 'function' && TV) renderTV(); } });
 function renderTV() {
   const root = document.getElementById('tv'); if (!root) return;
   const active = jobs.filter(j => !j.done);
@@ -1704,8 +1704,8 @@ function renderTV() {
   if (BARE && FILL && last) {
     const rws = root.querySelectorAll('.tv-row');
     if (rws.length) {
-      const free = window.innerHeight * 0.985 - last.getBoundingClientRect().bottom;
-      const add = Math.min(free / rws.length, window.innerHeight * 0.04);
+      const free = window.innerHeight * 0.95 - last.getBoundingClientRect().bottom;
+      const add = Math.min(free / rws.length, window.innerHeight * 0.1);
       if (add > 2) root.style.setProperty('--rh', (rws[0].getBoundingClientRect().height + add) + 'px');
     }
   }
