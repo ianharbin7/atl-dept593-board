@@ -338,6 +338,19 @@ app.delete('/api/dg/park/:id', (req, res) => {
   if (dgPark.length === n) return res.status(404).json({ error: 'not found' });
   dgSave(); res.json({ ok: true });
 });
+// weight / dimensions per MPN, learned from the DG paperwork so the next one fills in by itself
+const DGSPEC_FILE = path.join(DATA_DIR, 'atl_dgspecs.json');
+let dgSpecs = loadJSON(DGSPEC_FILE, {}); if (!dgSpecs || typeof dgSpecs !== 'object' || Array.isArray(dgSpecs)) dgSpecs = {};
+app.post('/api/dg/specs', (req, res) => {
+  const b = req.body || {}, k = clean(b.mpn).toUpperCase();
+  if (!k) return res.status(400).json({ error: 'mpn is required' });
+  dgSpecs[k] = { weight: clean(b.weight).slice(0, 30), dims: clean(b.dims).slice(0, 60), updISO: new Date().toISOString() };
+  saveJSON(DGSPEC_FILE, dgSpecs); res.json({ ok: true });
+});
+app.get('/api/dg/specs', (req, res) => {
+  const cf = v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ');
+  res.type('text/plain; charset=utf-8').send(Object.keys(dgSpecs).map(k => [k, dgSpecs[k].weight, dgSpecs[k].dims].map(cf).join('\t')).join('\n'));
+});
 setInterval(() => { const keep = Date.now() - 7 * 86400000, n = dgPark.length; dgPark = dgPark.filter(p => Date.parse(p.createdISO) >= keep); if (dgPark.length !== n) dgSave(); }, 3600 * 1000).unref();
 
 app.get('/ping', (req, res) => res.send('ok'));
