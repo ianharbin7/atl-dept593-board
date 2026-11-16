@@ -511,7 +511,9 @@ app.get('/api/pending', (req, res) => {
     const cm = String(d.comments || '').replace(/\s*\|\s*NOTE:\s*/i, '  |  NOTE: ');
     const when = hasT ? tm.slice(0, 2) + ':' + tm.slice(2) : '(no time)';
     const hd = d.holdDate || od, mo = hd.slice(5, 7).replace(/^0/, ''), dy = hd.slice(8, 10).replace(/^0/, '');   // the real calendar date it is due
-    const pre = od === from ? 'DUE TODAY ' + when : 'UPCOMING ' + mo + '/' + dy + ' ' + when;
+    const dowN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date(Date.UTC(+hd.slice(0, 4), +hd.slice(5, 7) - 1, +hd.slice(8, 10))).getUTCDay()];
+    const fm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(from), tmr = fm ? new Date(Date.UTC(+fm[1], +fm[2] - 1, +fm[3] + 1)).toISOString().slice(0, 10) : '';
+    const pre = od === from ? 'DUE TODAY ' + when : 'HOLD - FOR ' + (hd === tmr ? 'TOMORROW (' + dowN + ' ' + mo + '/' + dy + ')' : dowN + ' ' + mo + '/' + dy) + ' ' + when;
     const line = pre + ':  ' + d.route + (d.flt ? '  FLT ' + d.flt : '') + (d.awb ? '  AWB ' + d.awb : '') + (d.type ? '  |  ' + d.type : '') + (cm ? '  |  ' + cm : '');
     return { placeMs, od, line: line.slice(0, 400), section: d.section || '', form: d.form || '' };
   }).filter(r => r.od >= from).sort((a, b) => a.placeMs - b.placeMs);
