@@ -487,28 +487,28 @@
   @keyframes flipTop { 0% { transform: rotateX(0); } 100% { transform: rotateX(-90deg); } }
   @keyframes flipBot { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
   @media (prefers-reduced-motion: reduce) { .clock .dg.flip .ftop, .clock .dg.flip .fbot { animation-duration: 0s; animation-delay: 0s; } }
-  .tv-top { display: grid; grid-template-columns: 11vw 11vw 11vw 1fr; gap: 1vw; margin-bottom: 1.2vh; }
+  .tv-top { display: grid; grid-template-columns: 10vw 10vw 10vw 1fr; gap: 1vw; margin-bottom: 1.2vh; }
   .tv-stat { background: #0e2036; border-radius: 1vw; padding: 1vh 1vw; text-align: center; border: 1px solid #1c3553; }
-  .tv-stat b { display: block; font-size: 3.6vw; line-height: 1; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+  .tv-stat b { display: block; font-size: 3.3vw; line-height: 1; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
   .tv-stat span { display: block; margin-top: .4vh; font-size: .95vw; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8fb2d4; }
   .tv-stat.bad { background: #b91c1c; border-color: #ef4444; animation: tvpulse 1.6s ease-in-out infinite; } .tv-stat.bad span { color: #ffe1e1; }
   .tv-stat.warn { background: #b45309; border-color: #f59e0b; } .tv-stat.warn span { color: #ffedd5; }
-  .tv-next { background: linear-gradient(100deg, #0d4a8a, #0a3567); border: 1px solid #2b6cb0; border-radius: 1vw; padding: 1vh 1.6vw; display: flex; align-items: center; gap: 1.6vw; min-width: 0; }
+  .tv-next { background: linear-gradient(100deg, #0d4a8a, #0a3567); border: 1px solid #2b6cb0; border-radius: 1vw; padding: 1vh 1.6vw; display: flex; align-items: center; gap: 1.2vw; min-width: 0; min-height: 13vh; }
   .tv-next .lbl { font-size: 1vw; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #8fd0ff; white-space: nowrap; }
   .tv-next .what { flex: 1; font-size: 2.3vw; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tv-next .what i { font-style: normal; color: #8fd0ff; font-weight: 600; margin: 0 .5vw; }
   .tv-next .in { font-size: 3.7vw; line-height: .95; font-weight: 800; color: #fff; background: rgba(0,0,0,.28); padding: .35vh 1.2vw .25vh; border-radius: .8vw; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tv-next .in.hot { background: #dc2626; }
-  .tv-next .what.idle { font-size: 1.7vw; color: #8fb2d4; flex: 0 0 auto; text-overflow: clip; }
-  .tv-next .idfly { flex: 1 0 9vw; container-type: size; min-width: 0; align-self: stretch; display: flex; align-items: center; justify-content: center; }
+  .tv-next .what.idle { font-size: 1.35vw; color: #8fb2d4; flex: 0 0 auto; text-overflow: clip; }
+  .tv-next .idfly { flex: 1 1 20vw; container-type: size; min-width: 0; align-self: stretch; display: flex; align-items: center; justify-content: center; }
   .tv-next .idalt { width: 100%; height: 100%; display: block; overflow: visible; }
   .tv-next .idalt text { fill: #cfe6ff; font-weight: 700; font-family: inherit; }
-  .tv-next .idalt .ia-big { fill: #fff; font-size: 20px; font-weight: 800; }
-  .tv-next .idalt .ia-st { font-size: 13px; }
-  .tv-next .idalt .ia-stn { fill: #fff; font-size: 17px; font-weight: 800; }
+  .tv-next .idalt .ia-big { fill: #fff; font-size: 25px; font-weight: 800; }
+  .tv-next .idalt .ia-st { font-size: 16px; }
+  .tv-next .idalt .ia-stn { fill: #fff; font-size: 20px; font-weight: 800; }
   .tv-next .idalt .ia-path { fill: none; stroke: rgba(143,208,255,.5); stroke-width: 1.6; stroke-dasharray: 3 5; }
-  .tv-next .idb { display: flex; flex-direction: column; justify-content: center; flex: 0 1 auto; min-width: 0; overflow: hidden; padding: .2vh .7vw; border-radius: .8vw; background: rgba(0,0,0,.28); white-space: nowrap; }
-  .tv-next .idb b { overflow: hidden; text-overflow: ellipsis; font-size: 1.55vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tv-next .idb { display: flex; flex-direction: column; justify-content: center; flex: 0 0 auto; min-width: 0; overflow: hidden; padding: .2vh .7vw; border-radius: .8vw; background: rgba(0,0,0,.28); white-space: nowrap; }
+  .tv-next .idb b { overflow: hidden; text-overflow: ellipsis; font-size: 1.4vw; font-weight: 800; color: #fff; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .tv-next:has(.idfly) { gap: .9vw; }
   .tv-next .idb em { overflow: hidden; text-overflow: ellipsis; font-style: normal; font-size: .8vw; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #8fd0ff; }
   .tv-sec { display: flex; align-items: center; gap: .9vw; margin: 1vh 0 .6vh; padding-bottom: .6vh; border-bottom: .22vh solid rgba(143,178,212,.45); font-size: 2.2vw; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; }
