@@ -999,7 +999,8 @@ function jobTarget(job) {
 
 function minsTo(job) {
   const t = jobTarget(job);
-  return t === null ? 9999 : (t - Date.now()) / 60000;
+  // count from the start of the current clock minute, so the countdown always matches the minute the clock shows
+  return t === null ? 9999 : (t - Math.floor(Date.now() / 60000) * 60000) / 60000;
 }
 
 function fmtTime(t) {
@@ -1468,7 +1469,9 @@ async function loadMetrics() {
 connectWS();
 buildTypeDropdown();
 tick();
-setInterval(tick,30000);
+// tick right on every minute change (plus a 15s safety net), so the clock and every countdown flip together
+(function alignTick(){ setTimeout(() => { tick(); alignTick(); }, 60000 - (Date.now() % 60000) + 80); })();
+setInterval(tick,15000);
 
 // ── TV VIEW (?tv): big, read-from-across-the-room version of the board ──────
 const TV = document.documentElement.classList.contains('tv');
