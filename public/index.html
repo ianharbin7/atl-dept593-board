@@ -469,6 +469,9 @@
   html.tv .topbar-left h1 { font-size: 2.2vw; }
   html.tv .topbar-left p { font-size: .95vw; }
   html.tv .topbar-right .date-label { font-size: .95vw; }
+  /* header text always sits above the flying plane, the red stripe and the faint airport letters, so no letters get covered */
+  .topbar-left, .topbar-right { position: relative; z-index: 3; }
+  .topbar-right .date-label { text-shadow: 0 0 6px #0a2a52, 0 0 3px #0a2a52; }
   html.tv .topbar-right .shift-label { font-size: .8vw; }
   html.tv .clock { font-size: 2.7vw; }
   html.tv .clock .dg { width: 2.5vw; height: 3.8vw; line-height: 3.8vw; }
