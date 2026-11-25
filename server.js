@@ -492,8 +492,49 @@ app.post('/api/holds/record', (req, res) => {
   if (!clean(b.key) || !clean(b.route)) return res.status(400).json({ error: 'key and route are required' });
   const d = upsertDue({ key: clean(b.key), type: clean(b.type), route: clean(b.route).toUpperCase(), flt: clean(b.flt), time, awb: clean(b.awb),
     comments: clean(b.comments), holdDate, dueISO: ht.dueISO, form: String(b.form == null ? '' : b.form).slice(0, 6000), section: clean(b.section) });
+  cancelledHolds = cancelledHolds.filter(c => c.key !== d.key);      // entered again on purpose: it is no longer cancelled
   persist();
   res.json({ ok: true, id: d.id });
+});
+
+// ── Cancel a later-date shipment ─────────────────────────────────────────────
+// /api/holds/list      TAB lines for the turnover sheet's cancel list:  key, line, route, awb, flight
+// /api/holds/cancel    POST {key}: takes it off the hold list AND the held part of the board, and remembers it for 7 days
+// /api/holds/cancelled TAB lines (route, awb, flight): every shift's sheet uses this to drop its own copy of the Notes line
+// (a shipment already on the board itself is removed with the board's own delete)
+let cancelledHolds = [];
+const DOW3 = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+app.get('/api/holds/list', (req, res) => {
+  const cf = v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ');
+  const rows = dueLog.filter(d => d.key).slice().sort((a, b) => Date.parse(a.dueISO) - Date.parse(b.dueISO)).map(d => {
+    const tm = timeNorm(d.time), hasT = /^\d{4}$/.test(tm);
+    const hd = /^\d{4}-\d{2}-\d{2}$/.test(d.holdDate || '') ? d.holdDate : opDate(d.dueISO);
+    const dow = DOW3[new Date(Date.UTC(+hd.slice(0, 4), +hd.slice(5, 7) - 1, +hd.slice(8, 10))).getUTCDay()];
+    const cm = String(d.comments || '').replace(/\s*\|\s*NOTE:\s*/i, '  |  NOTE: ');
+    const line = dow + ' ' + (+hd.slice(5, 7)) + '/' + (+hd.slice(8, 10)) + (hasT ? ' ' + tm.slice(0, 2) + ':' + tm.slice(2) : '') + '   ' + d.route +
+      (d.flt ? '  FLT ' + d.flt : '') + (d.awb ? '  AWB ' + d.awb : '') + (cm ? '  |  ' + cm : '');
+    return [d.key, line.slice(0, 260), d.route || '', d.awb || '', d.flt || ''].map(cf).join('\t');
+  });
+  res.type('text/plain; charset=utf-8').send(rows.join('\n'));
+});
+app.post('/api/holds/cancel', (req, res) => {
+  const key = clean((req.body || {}).key);
+  if (!key) return res.status(400).json({ error: 'key is required' });
+  const d = dueLog.find(x => x.key === key), h = held.find(x => x.key === key);
+  const n1 = dueLog.length, n2 = held.length;
+  dueLog = dueLog.filter(x => x.key !== key);
+  held = held.filter(x => x.key !== key);
+  const src = d || h;
+  if (src) cancelledHolds.push({ key, route: src.route || '', awb: src.awb || '', flt: src.flt || '', atMs: Date.now() });
+  if (dueLog.length === n1 && held.length === n2) return res.status(404).json({ error: 'not found' });
+  persist(); broadcastHeld();
+  res.json({ ok: true, removedDue: n1 - dueLog.length, removedHeld: n2 - held.length });
+});
+app.get('/api/holds/cancelled', (req, res) => {
+  const keep = Date.now() - 7 * 86400000;
+  cancelledHolds = cancelledHolds.filter(c => c.atMs >= keep);
+  const cf = v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ');
+  res.type('text/plain; charset=utf-8').send(cancelledHolds.map(c => [c.route, c.awb, c.flt].map(cf).join('\t')).join('\n'));
 });
 
 // Plain-text list for the turnover workbook: everything pending from one operating day on.
